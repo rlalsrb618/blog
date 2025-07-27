@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>중원고 공지 알리미</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f8fc;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px 0;
+      background-color: #1c3c78;
+      color: white;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h2 {
+      border-bottom: 2px solid #1c3c78;
+      padding-bottom: 5px;
+      margin-top: 40px;
+    }
+
+    .card {
+      background-color: white;
+      padding: 15px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .date {
+      font-weight: bold;
+      color: #1c3c78;
+    }
+
+    .title {
+      font-size: 18px;
+      margin: 5px 0;
+    }
+
+    .description {
+      font-size: 14px;
+      color: #555;
+    }
+
+    .edit-btn, .delete-btn {
+      position: absolute;
+      top: 15px;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      color: white;
+    }
+
+    .edit-btn {
+      right: 70px;
+      background-color: #1c3c78;
+    }
+
+    .delete-btn {
+      right: 15px;
+      background-color: #c0392b;
+    }
+
+    .edit-btn:hover {
+      background-color: #163063;
+    }
+
+    .delete-btn:hover {
+      background-color: #962d22;
+    }
+
+    textarea, input {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 4px;
+      font-family: inherit;
+    }
+
+    .editing .date, .editing .title, .editing .description {
+      display: none;
+    }
+
+    .editing input, .editing textarea {
+      margin-bottom: 8px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .add-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #1c3c78;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .add-btn:hover {
+      background-color: #163063;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>중원고 행사·수행평가 알리미</h1>
+    <p>오늘의 공지사항을 빠르게 확인하세요</p>
+  </header>
+
+  <div class="container">
+    <button class="add-btn" onclick="addNotice()">+ 공지 추가하기</button>
+    <h2>📅 오늘의 공지</h2>
+    <div id="notice-list"></div>
+  </div>
+
+  <script>
+    const PASSWORD = "0922";
+
+    // 로컬스토리지에서 불러오기
+    let notices = JSON.parse(localStorage.getItem("notices")) || [];
+
+    function saveToLocal() {
+      localStorage.setItem("notices", JSON.stringify(notices));
+    }
+
+    function renderNotices() {
+      const list = document.getElementById("notice-list");
+      list.innerHTML = "";
+      notices.forEach((notice, index) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="date">${notice.date}</div>
+          <div class="title">${notice.title}</div>
+          <div class="description">${notice.description}</div>
+          <input type="text" class="edit-date hidden" value="${notice.date}">
+          <input type="text" class="edit-title hidden" value="${notice.title}">
+          <textarea class="edit-description hidden">${notice.description}</textarea>
+          <button class="edit-btn" onclick="handleEdit(this, ${index})">수정</button>
+          <button class="delete-btn" onclick="deleteNotice(${index})">삭제</button>
+        `;
+        list.prepend(card);
+      });
+    }
+
+    function handleEdit(button, index) {
+      const card = button.parentElement;
+      const isEditing = card.classList.contains("editing");
+
+      const date = card.querySelector(".date");
+      const title = card.querySelector(".title");
+      const desc = card.querySelector(".description");
+
+      const inputDate = card.querySelector(".edit-date");
+      const inputTitle = card.querySelector(".edit-title");
+      const inputDesc = card.querySelector(".edit-description");
+
+      if (isEditing) {
+        // 저장
+        notices[index].date = inputDate.value;
+        notices[index].title = inputTitle.value;
+        notices[index].description = inputDesc.value;
+        saveToLocal();
+        renderNotices();
+      } else {
+        const pw = prompt("수정하려면 비밀번호를 입력하세요:");
+        if (pw === PASSWORD) {
+          inputDate.classList.remove("hidden");
+          inputTitle.classList.remove("hidden");
+          inputDesc.classList.remove("hidden");
+          card.classList.add("editing");
+          button.textContent = "저장";
+        } else {
+          alert("비밀번호가 틀렸습니다.");
+        }
+      }
+    }
+
+    function deleteNotice(index) {
+      const pw = prompt("삭제하려면 비밀번호를 입력하세요:");
+      if (pw === PASSWORD) {
+        if (confirm("정말 삭제하시겠습니까?")) {
+          notices.splice(index, 1);
+          saveToLocal();
+          renderNotices();
+        }
+      } else {
+        alert("비밀번호가 틀렸습니다.");
+      }
+    }
+
+    function addNotice() {
+      const date = prompt("날짜를 입력하세요 (예: 2025-07-25)");
+      const title = prompt("제목을 입력하세요");
+      const description = prompt("내용을 입력하세요");
+      const pw = prompt("공지 추가 비밀번호를 입력하세요:");
+
+      if (pw !== PASSWORD) {
+        alert("비밀번호가 틀렸습니다. 공지를 추가할 수 없습니다.");
+        return;
+      }
+
+      if (!date || !title || !description) {
+        alert("모든 항목을 입력해야 합니다.");
+        return;
+      }
+
+      notices.push({ date, title, description });
+      saveToLocal();
+      renderNotices();
+    }
+
+    // 최초 실행 시 로딩
+    renderNotices();
+  </script>
+</body>
+</html>
