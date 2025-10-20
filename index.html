@@ -63,6 +63,7 @@
     <p>오늘의 공지사항을 빠르게 확인하세요</p>
   </header>
 
+  <!-- 반 선택 -->
   <div id="class-select" class="class-select">
     <h2>자신의 반을 입력하세요</h2>
     <p>👉 띄어쓰기 없이 입력하세요 (예: 1학년7반)</p>
@@ -70,6 +71,7 @@
     <button id="class-confirm-btn">확인</button>
   </div>
 
+  <!-- 공지 목록 -->
   <div class="container hidden" id="main-container">
     <button class="back-btn" id="back-btn">← 이전으로</button>
 
@@ -82,6 +84,7 @@
     <div id="class-notice-list"></div>
   </div>
 
+  <!-- 새 공지 추가 -->
   <div id="add-form" class="container hidden">
     <h2>📌 새 공지 추가</h2>
     <input type="text" id="add-date" placeholder="날짜 (예: 2025-07-25)">
@@ -89,8 +92,8 @@
     <textarea id="add-desc" placeholder="내용"></textarea>
     <input type="file" id="add-file" accept=".pdf,image/*">
     <br><br>
-    <button class="add-btn" id="submit-add-btn">등록</button>
-    <button class="back-btn" id="cancel-add-btn">취소</button>
+    <button class="add-btn" id="submit-add-btn" type="button">등록</button>
+    <button class="back-btn" id="cancel-add-btn" type="button">취소</button>
   </div>
 
   <!-- ✅ Firebase 연동 -->
@@ -100,7 +103,7 @@
       getFirestore, collection, addDoc, getDocs, deleteDoc, doc
     } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // 🔥 여기에 본인 Firebase 설정을 입력하세요
+    // 🔥 Firebase 설정 (본인 프로젝트 값으로 수정)
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -116,18 +119,15 @@
     const PASSWORD = "0922";
     let currentClass = null;
     let addingType = null;
-
     let generalNotices = [];
     let classNotices = {};
 
-    // --- Firestore 데이터 불러오기 ---
+    // 데이터 불러오기
     async function loadNotices() {
       generalNotices = [];
       classNotices = {};
-
       const generalSnap = await getDocs(collection(db, "generalNotices"));
       generalSnap.forEach(docSnap => generalNotices.push({ id: docSnap.id, ...docSnap.data() }));
-
       const classSnap = await getDocs(collection(db, "classNotices"));
       classSnap.forEach(docSnap => {
         const d = docSnap.data();
@@ -137,7 +137,6 @@
       renderNotices();
     }
 
-    // --- 공지 렌더링 ---
     function renderNotices() {
       const list = document.getElementById("notice-list");
       list.innerHTML = "";
@@ -168,17 +167,11 @@
         card.appendChild(fp);
       }
 
-      const editBtn = document.createElement("button");
-      editBtn.className = "edit-btn";
-      editBtn.innerText = "수정";
-      editBtn.onclick = () => alert("수정 기능은 곧 추가됩니다!");
-
       const delBtn = document.createElement("button");
       delBtn.className = "delete-btn";
       delBtn.innerText = "삭제";
       delBtn.onclick = () => deleteNotice(index, type);
 
-      card.appendChild(editBtn);
       card.appendChild(delBtn);
       return card;
     }
@@ -226,8 +219,9 @@
       addingType = null;
     }
 
-    // ✅ 수정된 공지 등록 함수
-    async function submitNotice() {
+    // ✅ 수정된 등록 함수 (페이지 새로고침 완전 방지 + 파일 지원)
+    async function submitNotice(event) {
+      if (event) event.preventDefault(); // 기본 동작 차단
       const date = document.getElementById("add-date").value.trim();
       const title = document.getElementById("add-title").value.trim();
       const description = document.getElementById("add-desc").value.trim();
@@ -239,39 +233,33 @@
         return;
       }
 
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const fileData = e.target.result;
-          const fileName = file.name;
-          const fileType = file.type;
+      let notice = { date, title, description };
 
-          await storeNotice({ date, title, description, fileData, fileName, fileType });
-          alert("등록 완료!");
-          await loadNotices();
-          cancelAdd();
-        };
-        reader.readAsDataURL(file);
-      } else {
-        await storeNotice({ date, title, description });
-        alert("등록 완료!");
-        await loadNotices();
-        cancelAdd();
+      if (file) {
+        notice.fileName = file.name;
+        notice.fileType = file.type;
+        notice.fileData = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
       }
 
-      // 입력창 초기화
-      document.getElementById("add-date").value = "";
-      document.getElementById("add-title").value = "";
-      document.getElementById("add-desc").value = "";
-      document.getElementById("add-file").value = "";
-    }
-
-    async function storeNotice(notice) {
       if (addingType === "general") {
         await addDoc(collection(db, "generalNotices"), notice);
       } else if (addingType === "class") {
         await addDoc(collection(db, "classNotices"), { className: currentClass, ...notice });
       }
+
+      alert("등록 완료!");
+      document.getElementById("add-date").value = "";
+      document.getElementById("add-title").value = "";
+      document.getElementById("add-desc").value = "";
+      document.getElementById("add-file").value = "";
+
+      cancelAdd();
+      await loadNotices();
     }
 
     document.addEventListener("DOMContentLoaded", () => {
