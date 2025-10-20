@@ -1,369 +1,121 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>중원고 공지 알리미</title>
-  <style>
-    body { font-family: 'Segoe UI', sans-serif; background-color: #f5f8fc; margin: 0; padding: 20px; color:#333; }
-    header { text-align:center; padding:20px 0; background:#1c3c78; color:#fff }
-    .container { max-width:900px; margin:0 auto; }
-    h2 { border-bottom:2px solid #1c3c78; padding-bottom:5px; margin-top:40px; }
-    .card { background:#fff; padding:15px 20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:20px; position:relative; }
-    .date { font-weight:bold; color:#1c3c78; }
-    .title { font-size:18px; margin:5px 0; }
-    .description { font-size:14px; color:#555; white-space:pre-wrap; }
-    .edit-btn, .delete-btn { position:absolute; top:15px; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12px; color:white; }
-    .edit-btn { right:70px; background:#1c3c78; } .delete-btn { right:15px; background:#c0392b; }
-    .edit-btn:hover{background:#163063} .delete-btn:hover{background:#962d22}
-    textarea,input{width:100%; box-sizing:border-box; margin-top:4px; font-family:inherit}
-    .hidden{display:none}
-    .add-btn{display:block; margin:20px auto; padding:10px 20px; background:#1c3c78; color:#fff; border:none; border-radius:8px; font-size:16px; cursor:pointer}
-    .add-btn:hover{background:#163063}
-    .back-btn{margin:15px 0; padding:8px 16px; background:#888; color:#fff; border:none; border-radius:6px; cursor:pointer}
-    .back-btn:hover{background:#555}
-    .file-preview{margin-top:10px} .file-preview img{max-width:200px;border-radius:6px;margin-top:5px;display:block}
-    .file-link{display:inline-block;margin-top:5px;color:#1c3c78;text-decoration:underline}
-    #debug { font-size:13px; color:#666; margin-top:8px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>중원고 공지 알리미</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+body { font-family: 'Segoe UI', sans-serif; background-color: #f5f8fc; margin:0; padding:20px; color:#333; }
+header { text-align:center; padding:20px 0; background-color:#1c3c78; color:white; }
+.container { max-width:900px; margin:0 auto; }
+h2 { border-bottom:2px solid #1c3c78; padding-bottom:5px; margin-top:40px; }
+.card { background:white; padding:15px 20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:20px; position:relative; }
+.date { font-weight:bold; color:#1c3c78; }
+.title { font-size:18px; margin:5px 0; }
+.description { font-size:14px; color:#555; white-space:pre-wrap; }
+.edit-btn, .delete-btn { position:absolute; top:15px; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12px; color:white; }
+.edit-btn { right:70px; background-color:#1c3c78; }
+.delete-btn { right:15px; background-color:#c0392b; }
+.edit-btn:hover { background-color:#163063; }
+.delete-btn:hover { background-color:#962d22; }
+.add-btn { display:block; margin:20px auto; padding:10px 20px; background-color:#1c3c78; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer; }
+.add-btn:hover { background-color:#163063; }
+.back-btn { margin:15px 0; padding:8px 16px; background-color:#888; color:white; border:none; border-radius:6px; cursor:pointer; }
+.back-btn:hover { background-color:#555; }
+textarea, input { width:100%; box-sizing:border-box; margin-top:4px; font-family:inherit; }
+.file-preview { margin-top:10px; }
+.file-preview img { max-width:200px; border-radius:6px; margin-top:5px; display:block; }
+.file-link { display:inline-block; margin-top:5px; color:#1c3c78; text-decoration:underline; }
+.hidden { display:none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>중원고 행사·수행평가 알리미</h1>
-    <p>오늘의 공지사항을 빠르게 확인하세요</p>
-  </header>
+<header>
+<h1>중원고 행사·수행평가 알리미</h1>
+<p>오늘의 공지사항을 빠르게 확인하세요</p>
+</header>
 
-  <!-- 반 선택 화면 -->
-  <div id="class-select" class="class-select container">
-    <h2>자신의 반을 입력하세요</h2>
-    <p>👉 띄어쓰기 없이 입력하세요 (예: 1학년7반)</p>
-    <input type="text" id="class-input" placeholder="예: 1학년7반">
-    <button id="class-confirm-btn" class="add-btn" type="button">확인</button>
-    <div id="debug">상태: 대기중</div>
-  </div>
+<!-- 반 선택 화면 -->
+<div id="class-select" class="container">
+<h2>자신의 반을 입력하세요</h2>
+<p>👉 띄어쓰기 없이 입력하세요 (예: 1학년7반)</p>
+<input type="text" id="class-input" placeholder="예: 1학년7반">
+<button id="class-confirm-btn">확인</button>
+</div>
 
-  <!-- 실제 공지 화면 -->
-  <div id="main-container" class="container hidden">
-    <button id="back-btn" class="back-btn" type="button">← 이전으로</button>
+<!-- 공지 화면 -->
+<div class="container hidden" id="main-container">
+<button class="back-btn" id="back-btn">← 이전으로</button>
+<button class="add-btn" id="add-general-btn">+ 공지 추가하기</button>
+<h2>📅 오늘의 행사</h2>
+<div id="notice-list"></div>
+<h2 id="class-title">📝 수행평가</h2>
+<button class="add-btn" id="add-class-btn">+ 수행평가 추가하기</button>
+<div id="class-notice-list"></div>
+</div>
 
-    <button id="add-general-btn" class="add-btn" type="button">+ 공지 추가하기</button>
-    <h2>📅 오늘의 행사</h2>
-    <div id="notice-list"></div>
+<!-- 공지 추가 폼 -->
+<div id="add-form" class="container hidden">
+<h2>📌 새 공지 추가</h2>
+<input type="text" id="add-date" placeholder="날짜 (예: 2025-07-25)">
+<input type="text" id="add-title" placeholder="제목">
+<textarea id="add-desc" placeholder="내용"></textarea>
+<input type="file" id="add-file" accept=".pdf,image/*">
+<br><br>
+<button class="add-btn" id="submit-add-btn">등록</button>
+<button class="back-btn" id="cancel-add-btn">취소</button>
+</div>
 
-    <h2 id="class-title">📝 수행평가</h2>
-    <button id="add-class-btn" class="add-btn" type="button">+ 수행평가 추가하기</button>
-    <div id="class-notice-list"></div>
-  </div>
+<script>
+const PASSWORD = "0922";
+let currentClass = null; 
+let addingType = null; 
+const socket = io();
 
-  <!-- 공지 추가 폼 -->
-  <div id="add-form" class="container hidden">
-    <h2>📌 새 공지 추가</h2>
-    <input type="text" id="add-date" placeholder="날짜 (예: 2025-07-25)">
-    <input type="text" id="add-title" placeholder="제목">
-    <textarea id="add-desc" placeholder="내용"></textarea>
-    <input type="file" id="add-file" accept=".pdf,image/*">
-    <br><br>
-    <button id="submit-add-btn" class="add-btn" type="button">등록</button>
-    <button id="cancel-add-btn" class="back-btn" type="button">취소</button>
-  </div>
+// DOM
+const classInput = document.getElementById('class-input');
+const noticeList = document.getElementById('notice-list');
+const classNoticeList = document.getElementById('class-notice-list');
 
-  <script type="module">
-    // Firebase 모듈 로드
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import {
-      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+// 화면 전환
+function setClass() {
+    const raw = classInput.value.trim().replace(/\s+/g,'');
+    if (!/^1학년[1-9]반$/.test(raw)) { alert("형식 오류"); return; }
+    currentClass = raw;
+    document.getElementById("class-select").classList.add("hidden");
+    document.getElementById("main-container").classList.remove("hidden");
+    document.getElementById("class-title").textContent = `📝 ${currentClass} 수행평가`;
+}
+document.getElementById('class-confirm-btn').onclick = setClass;
+document.getElementById('back-btn').onclick = () => { currentClass=null; document.getElementById("main-container").classList.add("hidden"); document.getElementById("class-select").classList.remove("hidden"); };
 
-    // ==== 여기에 Firebase 설정 넣으세요 ====
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-    // ======================================
+// 추가 폼
+function openAddForm(type) {
+    const pw = prompt("비밀번호 입력"); if(pw!==PASSWORD){alert("틀림"); return;}
+    addingType = type;
+    document.getElementById("main-container").classList.add("hidden");
+    document.getElementById("add-form").classList.remove("hidden");
+}
+document.getElementById("add-general-btn").onclick = ()=>openAddForm("general");
+document.getElementById("add-class-btn").onclick = ()=>openAddForm("class");
+document.getElementById("cancel-add-btn").onclick = ()=>{
+    addingType=null;
+    document.getElementById("add-form").classList.add("hidden");
+    document.getElementById("main-container").classList.remove("hidden");
+};
 
-    const debugEl = txt => { const el = document.getElementById('debug'); if (el) el.innerText = txt; };
+// 공지 등록
+document.getElementById("submit-add-btn").onclick = async ()=>{
+    const date=document.getElementById("add-date").value.trim();
+    const title=document.getElementById("add-title").value.trim();
+    const description=document.getElementById("add-desc").value.trim();
+    if(!date||!title||!description){alert("모두 입력"); return;}
 
-    // 초기화
-    let app;
-    try {
-      app = initializeApp(firebaseConfig);
-      debugEl('Firebase 초기화 성공 (설정 확인 필요)');
-      console.log('Firebase initialized');
-    } catch (err) {
-      console.error('Firebase initialization error:', err);
-      alert('Firebase 초기화 실패 — 콘솔 확인');
-      debugEl('Firebase 초기화 실패 — 콘솔 확인');
-      throw err;
-    }
-
-    const db = getFirestore(app);
-
-    const PASSWORD = "0922";
-    let currentClass = null;
-    let addingType = null;
-
-    let generalNotices = []; // [{id, date, title, description, ...}]
-    let classNotices = {};   // { "1학년7반": [{id, ...}, ...] }
-
-    // Firestore에서 문서 목록 불러오기
-    async function loadNotices() {
-      debugEl('공지 불러오는 중...');
-      try {
-        generalNotices = [];
-        classNotices = {};
-
-        const genSnap = await getDocs(collection(db, 'generalNotices'));
-        genSnap.forEach(d => generalNotices.push({ id: d.id, ...d.data() }));
-
-        const clsSnap = await getDocs(collection(db, 'classNotices'));
-        clsSnap.forEach(d => {
-          const data = d.data();
-          const cname = data.className || 'unknown';
-          if (!classNotices[cname]) classNotices[cname] = [];
-          classNotices[cname].push({ id: d.id, ...data });
-        });
-
-        debugEl(`불러오기 완료 — 전체 공지: ${generalNotices.length}, 반별 그룹: ${Object.keys(classNotices).length}`);
-        renderNotices();
-      } catch (err) {
-        console.error('loadNotices error:', err);
-        debugEl('공지 불러오기 실패 — 콘솔 확인');
-        alert('공지 불러오기 중 오류가 발생했습니다. 콘솔을 확인하세요.');
-      }
-    }
-
-    // 렌더
-    function renderNotices() {
-      const noticeList = document.getElementById('notice-list');
-      noticeList.innerHTML = '';
-      // 최신 순으로 보이게 Firestore에서 가져온 순서를 반대로 출력 (원하면 sort 추가)
-      generalNotices.slice().reverse().forEach(n => {
-        noticeList.appendChild(makeCard(n, 'general'));
-      });
-
-      const classList = document.getElementById('class-notice-list');
-      classList.innerHTML = '';
-      const arr = (currentClass && classNotices[currentClass]) ? classNotices[currentClass] : [];
-      arr.slice().reverse().forEach(n => {
-        classList.appendChild(makeCard(n, 'class'));
-      });
-    }
-
-    // 카드 생성 — id 기반으로 수정/삭제 작동
-    function makeCard(notice, type) {
-      const card = document.createElement('div');
-      card.className = 'card';
-
-      const date = document.createElement('div');
-      date.className = 'date';
-      date.innerText = notice.date || '';
-
-      const title = document.createElement('div');
-      title.className = 'title';
-      title.innerText = notice.title || '';
-
-      const desc = document.createElement('div');
-      desc.className = 'description';
-      desc.innerText = notice.description || '';
-
-      card.appendChild(date);
-      card.appendChild(title);
-      card.appendChild(desc);
-
-      if (notice.fileData) {
-        const fp = document.createElement('div');
-        fp.className = 'file-preview';
-        if (notice.fileType && notice.fileType.startsWith('image/')) {
-          fp.innerHTML = `<img src="${notice.fileData}" alt="${notice.fileName || '이미지'}">`;
-        } else {
-          fp.innerHTML = `<a href="${notice.fileData}" download="${notice.fileName || 'file'}" class="file-link">📎 ${notice.fileName || '첨부파일'}</a>`;
-        }
-        card.appendChild(fp);
-      }
-
-      // 수정 버튼
-      const editBtn = document.createElement('button');
-      editBtn.className = 'edit-btn';
-      editBtn.type = 'button';
-      editBtn.innerText = '수정';
-      editBtn.onclick = () => handleEdit(notice.id, type);
-
-      // 삭제 버튼
-      const delBtn = document.createElement('button');
-      delBtn.className = 'delete-btn';
-      delBtn.type = 'button';
-      delBtn.innerText = '삭제';
-      delBtn.onclick = () => handleDelete(notice.id, type);
-
-      card.appendChild(editBtn);
-      card.appendChild(delBtn);
-
-      return card;
-    }
-
-    // 삭제: id 기반
-    async function handleDelete(docId, type) {
-      try {
-        const pw = prompt('삭제하려면 비밀번호를 입력하세요:');
-        if (pw !== PASSWORD) { alert('비밀번호가 틀렸습니다.'); return; }
-        if (!confirm('정말 삭제하시겠습니까?')) return;
-        const col = (type === 'general') ? 'generalNotices' : 'classNotices';
-        await deleteDoc(doc(db, col, docId));
-        alert('삭제 완료');
-        await loadNotices();
-      } catch (err) {
-        console.error('handleDelete error:', err);
-        alert('삭제 중 오류가 발생했습니다. 콘솔 확인');
-      }
-    }
-
-    // 수정: 간단 팝업 수정 (id 기반)
-    async function handleEdit(docId, type) {
-      try {
-        const pw = prompt('수정하려면 비밀번호를 입력하세요:');
-        if (pw !== PASSWORD) { alert('비밀번호가 틀렸습니다.'); return; }
-
-        // 문서 현재값 가져오기 (from arrays)
-        const sourceArr = (type === 'general') ? generalNotices : (classNotices[currentClass] || []);
-        const docObj = sourceArr.find(x => x.id === docId);
-        if (!docObj) { alert('해당 공지를 찾을 수 없습니다.'); return; }
-
-        const newDate = prompt('날짜 수정', docObj.date || '');
-        const newTitle = prompt('제목 수정', docObj.title || '');
-        const newDesc = prompt('내용 수정', docObj.description || '');
-        if (newDate === null && newTitle === null && newDesc === null) return; // 취소
-
-        const updates = {};
-        if (newDate !== null) updates.date = newDate;
-        if (newTitle !== null) updates.title = newTitle;
-        if (newDesc !== null) updates.description = newDesc;
-
-        const col = (type === 'general') ? 'generalNotices' : 'classNotices';
-        await updateDoc(doc(db, col, docId), updates);
-        alert('수정 완료');
-        await loadNotices();
-      } catch (err) {
-        console.error('handleEdit error:', err);
-        alert('수정 중 오류가 발생했습니다. 콘솔 확인');
-      }
-    }
-
-    // 반 설정
-    function normalizeClassInput(raw) {
-      if (!raw) return '';
-      return String(raw).replace(/\s+/g, '').replace(/\u3000/g, '');
-    }
-
-    function setClass() {
-      const raw = document.getElementById('class-input').value;
-      const input = normalizeClassInput(raw);
-      const m = input.match(/^1학년([1-9])반$/);
-      if (!m) { alert('입력 형식이 올바르지 않습니다. 예: 1학년7반 (1~9반)'); return; }
-      currentClass = `1학년${m[1]}반`;
-      document.getElementById('class-select').classList.add('hidden');
-      document.getElementById('main-container').classList.remove('hidden');
-      document.getElementById('class-title').textContent = `📝 ${currentClass} 수행평가`;
-      debugEl(`현재 반: ${currentClass}`);
-      // 이미 loadNotices로 데이터는 받아두었으니 렌더
-      renderNotices();
-    }
-
-    function goBack() {
-      currentClass = null;
-      document.getElementById('main-container').classList.add('hidden');
-      document.getElementById('class-select').classList.remove('hidden');
-    }
-
-    // 열기/취소
-    function openAddForm(type) {
-      const pw = prompt('공지 추가 비밀번호를 입력하세요:');
-      if (pw !== PASSWORD) { alert('비밀번호가 틀렸습니다.'); return; }
-      if (type === 'class' && !currentClass) { alert('반을 먼저 선택하세요.'); return; }
-      addingType = type;
-      document.getElementById('main-container').classList.add('hidden');
-      document.getElementById('add-form').classList.remove('hidden');
-    }
-
-    function cancelAdd() {
-      document.getElementById('add-form').classList.add('hidden');
-      document.getElementById('main-container').classList.remove('hidden');
-      addingType = null;
-    }
-
-    // FileReader를 Promise로 래핑
-    function readFileAsDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = e => reject(e);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // 등록 함수: event.preventDefault로 새로고침 차단, 파일 처리 안전히 완료 후 addDoc
-    async function submitNotice(event) {
-      try {
-        if (event && typeof event.preventDefault === 'function') event.preventDefault();
-
-        const date = document.getElementById('add-date').value.trim();
-        const title = document.getElementById('add-title').value.trim();
-        const description = document.getElementById('add-desc').value.trim();
-        const fileInput = document.getElementById('add-file');
-        const file = fileInput.files[0];
-
-        if (!date || !title || !description) { alert('모든 항목을 입력하세요.'); return; }
-        if (!addingType) { alert('추가 유형이 지정되지 않았습니다.'); return; }
-
-        const notice = { date, title, description, createdAt: serverTimestamp() };
-
-        if (file) {
-          debugEl('파일 읽는 중...');
-          notice.fileName = file.name;
-          notice.fileType = file.type;
-          notice.fileData = await readFileAsDataURL(file); // await로 안전 보장
-          debugEl('파일 읽기 완료');
-        }
-
-        const col = (addingType === 'general') ? 'generalNotices' : 'classNotices';
-        const payload = (addingType === 'class') ? { className: currentClass, ...notice } : notice;
-
-        await addDoc(collection(db, col), payload);
-        alert('등록 완료!');
-        debugEl('등록 완료 — 목록 갱신 중...');
-
-        // 초기화
-        document.getElementById('add-date').value = '';
-        document.getElementById('add-title').value = '';
-        document.getElementById('add-desc').value = '';
-        document.getElementById('add-file').value = '';
-
-        cancelAdd();
-        await loadNotices();
-      } catch (err) {
-        console.error('submitNotice error:', err);
-        alert('공지 등록 중 오류가 발생했습니다. 콘솔을 확인해 주세요.');
-        debugEl('등록 오류 — 콘솔 확인');
-      }
-    }
-
-    // 이벤트 바인딩 및 초기 로드
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('class-confirm-btn').addEventListener('click', setClass);
-      document.getElementById('back-btn').addEventListener('click', goBack);
-      document.getElementById('add-general-btn').addEventListener('click', () => openAddForm('general'));
-      document.getElementById('add-class-btn').addEventListener('click', () => openAddForm('class'));
-      document.getElementById('submit-add-btn').addEventListener('click', submitNotice);
-      document.getElementById('cancel-add-btn').addEventListener('click', cancelAdd);
-      // 엔터로 반 입력
-      document.getElementById('class-input').addEventListener('keydown', e => { if (e.key === 'Enter') setClass(); });
-
-      // 초기 데이터 불러오기
-      loadNotices().catch(err => { console.warn('초기 불러오기 오류:', err); debugEl('초기 불러오기 오류 — 콘솔 확인'); });
-    });
-  </script>
-</body>
-</html>
+    const fileInput=document.getElementById("add-file");
+    let fileData=null, fileName="", fileType="";
+    if(fileInput.files.length>0){
+        const file=fileInput.files[0];
+        fileName=file.name; fileType=file.type;
+        fileData = await new Promise(resolve=>{
+            const reader
