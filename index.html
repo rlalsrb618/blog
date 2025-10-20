@@ -1,183 +1,255 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>중원고 공지 알리미 (Firebase)</title>
-  <style>
-    body { font-family: 'Segoe UI', sans-serif; background:#f5f8fc; margin:0; padding:20px; color:#333; }
-    header { text-align:center; padding:20px 0; background:#1c3c78; color:#fff; }
-    .container { max-width:900px; margin:0 auto; }
-    h2 { border-bottom:2px solid #1c3c78; padding-bottom:5px; margin-top:40px; }
-    .card { background:#fff; padding:15px 20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:20px; position:relative; }
-    .date { font-weight:bold; color:#1c3c78; }
-    .title { font-size:18px; margin:5px 0; }
-    .description { font-size:14px; color:#555; white-space:pre-wrap; }
-    .edit-btn, .delete-btn { position:absolute; top:15px; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12px; color:white; }
-    .edit-btn { right:70px; background:#1c3c78; } 
-    .delete-btn { right:15px; background:#c0392b; }
-    .edit-btn:hover{background:#163063} 
-    .delete-btn:hover{background:#962d22}
-    textarea,input{width:100%; box-sizing:border-box; margin-top:4px; font-family:inherit}
-    .hidden{display:none}
-    .add-btn{display:block; margin:20px auto; padding:10px 20px; background:#1c3c78; color:#fff; border:none; border-radius:8px; font-size:16px; cursor:pointer}
-    .add-btn:hover{background:#163063}
-    .back-btn{margin:15px 0; padding:8px 16px; background:#888; color:#fff; border:none; border-radius:6px; cursor:pointer}
-    .back-btn:hover{background:#555}
-    .file-preview{margin-top:10px} 
-    .file-preview img{max-width:200px;border-radius:6px;margin-top:5px;display:block}
-    .file-link{display:inline-block;margin-top:5px;color:#1c3c78;text-decoration:underline}
-    #debug { font-size:13px; color:#666; margin-top:8px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>중원고 공지 알리미</title>
+<style>
+body { font-family: 'Segoe UI', sans-serif; background:#f5f8fc; margin:0; padding:20px; color:#333; }
+header { text-align:center; padding:20px 0; background:#1c3c78; color:#fff; }
+.container { max-width:900px; margin:0 auto; }
+h2 { border-bottom:2px solid #1c3c78; padding-bottom:5px; margin-top:40px; }
+.card { background:#fff; padding:15px 20px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:20px; position:relative; }
+.date { font-weight:bold; color:#1c3c78; }
+.title { font-size:18px; margin:5px 0; }
+.description { font-size:14px; color:#555; white-space:pre-wrap; }
+.edit-btn, .delete-btn { position:absolute; top:15px; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:12px; color:white; }
+.edit-btn { right:70px; background:#1c3c78; } 
+.delete-btn { right:15px; background:#c0392b; }
+.edit-btn:hover{background:#163063} 
+.delete-btn:hover{background:#962d22}
+textarea,input{width:100%; box-sizing:border-box; margin-top:4px; font-family:inherit}
+.hidden{display:none}
+.add-btn{display:block; margin:20px auto; padding:10px 20px; background:#1c3c78; color:#fff; border:none; border-radius:8px; font-size:16px; cursor:pointer}
+.add-btn:hover{background:#163063}
+.back-btn{margin:15px 0; padding:8px 16px; background:#888; color:#fff; border:none; border-radius:6px; cursor:pointer}
+.back-btn:hover{background:#555}
+.file-preview{margin-top:10px} 
+.file-preview img{max-width:200px;border-radius:6px;margin-top:5px;display:block}
+.file-link{display:inline-block;margin-top:5px;color:#1c3c78;text-decoration:underline}
+#debug { font-size:13px; color:#666; margin-top:8px; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>중원고 행사·수행평가 알리미</h1>
-    <p>오늘의 공지사항을 빠르게 확인하세요</p>
-  </header>
 
-  <div id="class-select" class="container">
-    <h2>자신의 반을 입력하세요</h2>
-    <p>👉 띄어쓰기 없이 입력하세요 (예: 1학년7반)</p>
-    <input type="text" id="class-input" placeholder="예: 1학년7반">
-    <button id="class-confirm-btn" class="add-btn" type="button">확인</button>
-    <div id="debug">상태: 대기중</div>
-  </div>
+<header>
+  <h1>중원고 행사·수행평가 알리미</h1>
+  <p>오늘의 공지사항을 빠르게 확인하세요</p>
+</header>
 
-  <div id="main-container" class="container hidden">
-    <button id="back-btn" class="back-btn">← 이전으로</button>
-    <button id="add-general-btn" class="add-btn">+ 공지 추가하기</button>
-    <h2>📅 오늘의 행사</h2>
-    <div id="notice-list"></div>
+<div id="class-select" class="container">
+  <h2>자신의 반을 입력하세요</h2>
+  <p>👉 띄어쓰기 없이 입력하세요 (예: 1학년7반)</p>
+  <input type="text" id="class-input" placeholder="예: 1학년7반">
+  <button id="class-confirm-btn" class="add-btn">확인</button>
+  <div id="debug">상태: 대기중</div>
+</div>
 
-    <h2 id="class-title">📝 수행평가</h2>
-    <button id="add-class-btn" class="add-btn">+ 수행평가 추가하기</button>
-    <div id="class-notice-list"></div>
-  </div>
+<div id="main-container" class="container hidden">
+  <button id="back-btn" class="back-btn">← 이전으로</button>
+  <button id="add-general-btn" class="add-btn">+ 공지 추가하기</button>
+  <h2>📅 오늘의 행사</h2>
+  <div id="notice-list"></div>
 
-  <div id="add-form" class="container hidden">
-    <h2>📌 새 공지 추가</h2>
-    <input type="text" id="add-date" placeholder="날짜 (예: 2025-10-21)">
-    <input type="text" id="add-title" placeholder="제목">
-    <textarea id="add-desc" placeholder="내용"></textarea>
-    <input type="file" id="add-file" accept=".pdf,image/*">
-    <br><br>
-    <button id="submit-add-btn" class="add-btn">등록</button>
-    <button id="cancel-add-btn" class="back-btn">취소</button>
-  </div>
+  <h2 id="class-title">📝 수행평가</h2>
+  <button id="add-class-btn" class="add-btn">+ 수행평가 추가하기</button>
+  <div id="class-notice-list"></div>
+</div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+<div id="add-form" class="container hidden">
+  <h2>📌 새 공지 추가</h2>
+  <input type="text" id="add-date" placeholder="날짜 (예: 2025-10-21)">
+  <input type="text" id="add-title" placeholder="제목">
+  <textarea id="add-desc" placeholder="내용"></textarea>
+  <input type="file" id="add-file" accept=".pdf,image/*">
+  <br><br>
+  <button id="submit-add-btn" class="add-btn">등록</button>
+  <button id="cancel-add-btn" class="back-btn">취소</button>
+</div>
 
-    // ==== Firebase 설정 ====
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    const PASSWORD = "0922";
-    let currentClass = null;
-    let addingType = null;
-    let generalNotices = [];
-    let classNotices = {};
+// ==== Firebase 설정 ====
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    const debugEl = txt => document.getElementById('debug').innerText = txt;
+const PASSWORD = "0922";
+let currentClass = null;
+let addingType = null;
+let generalNotices = [];
+let classNotices = {};
 
-    async function loadNotices() {
-      try {
-        generalNotices = [];
-        classNotices = {};
+const debugEl = txt => document.getElementById('debug').innerText = txt;
 
-        const genSnap = await getDocs(collection(db, 'generalNotices'));
-        genSnap.forEach(d => generalNotices.push({ id:d.id, ...d.data() }));
+// 파일 읽기
+function readFileAsDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>resolve(e.target.result);
+    reader.onerror=e=>reject(e);
+    reader.readAsDataURL(file);
+  });
+}
 
-        const clsSnap = await getDocs(collection(db, 'classNotices'));
-        clsSnap.forEach(d => {
-          const cname = d.data().className || 'unknown';
-          if(!classNotices[cname]) classNotices[cname] = [];
-          classNotices[cname].push({ id:d.id, ...d.data() });
-        });
+// 공지 불러오기
+async function loadNotices(){
+  try{
+    generalNotices = [];
+    classNotices = {};
 
-        renderNotices();
-        debugEl(`공지 불러오기 완료`);
-      } catch(e) {
-        console.error(e);
-        debugEl('불러오기 실패');
-      }
-    }
+    const genSnap = await getDocs(collection(db,'generalNotices'));
+    genSnap.forEach(d=>generalNotices.push({id:d.id,...d.data()}));
 
-    function renderNotices() {
-      const noticeList = document.getElementById('notice-list');
-      noticeList.innerHTML = '';
-      generalNotices.slice().reverse().forEach(n => noticeList.appendChild(makeCard(n,'general')));
+    const clsSnap = await getDocs(collection(db,'classNotices'));
+    clsSnap.forEach(d=>{
+      const cname = d.data().className||'unknown';
+      if(!classNotices[cname]) classNotices[cname]=[];
+      classNotices[cname].push({id:d.id,...d.data()});
+    });
+    renderNotices();
+    debugEl('공지 불러오기 완료');
+  }catch(e){console.error(e); debugEl('불러오기 실패');}
+}
 
-      const classList = document.getElementById('class-notice-list');
-      classList.innerHTML = '';
-      const arr = (currentClass && classNotices[currentClass]) ? classNotices[currentClass] : [];
-      arr.slice().reverse().forEach(n => classList.appendChild(makeCard(n,'class')));
-    }
+// 카드 렌더링
+function renderNotices(){
+  const noticeList = document.getElementById('notice-list');
+  noticeList.innerHTML = '';
+  generalNotices.slice().reverse().forEach(n=>noticeList.appendChild(makeCard(n,'general')));
 
-    function makeCard(notice,type) {
-      const card = document.createElement('div'); card.className='card';
-      card.innerHTML = `<div class="date">${notice.date||''}</div>
-                        <div class="title">${notice.title||''}</div>
-                        <div class="description">${notice.description||''}</div>`;
-      if(notice.fileData){
-        const fp=document.createElement('div'); fp.className='file-preview';
-        if(notice.fileType.startsWith('image/')) fp.innerHTML=`<img src="${notice.fileData}" alt="${notice.fileName||'이미지'}">`;
-        else fp.innerHTML=`<a href="${notice.fileData}" download="${notice.fileName||'file'}" class="file-link">📎 ${notice.fileName||'첨부파일'}</a>`;
-        card.appendChild(fp);
-      }
+  const classList = document.getElementById('class-notice-list');
+  classList.innerHTML = '';
+  const arr = (currentClass && classNotices[currentClass])? classNotices[currentClass]:[];
+  arr.slice().reverse().forEach(n=>classList.appendChild(makeCard(n,'class')));
+}
 
-      const editBtn=document.createElement('button'); editBtn.className='edit-btn'; editBtn.type='button'; editBtn.innerText='수정';
-      editBtn.onclick=()=>handleEdit(notice.id,type);
-      const delBtn=document.createElement('button'); delBtn.className='delete-btn'; delBtn.type='button'; delBtn.innerText='삭제';
-      delBtn.onclick=()=>handleDelete(notice.id,type);
-      card.appendChild(editBtn); card.appendChild(delBtn);
-      return card;
-    }
+function makeCard(notice,type){
+  const card=document.createElement('div'); card.className='card';
+  card.innerHTML=`<div class="date">${notice.date||''}</div>
+                  <div class="title">${notice.title||''}</div>
+                  <div class="description">${notice.description||''}</div>`;
+  if(notice.fileData){
+    const fp=document.createElement('div'); fp.className='file-preview';
+    if(notice.fileType.startsWith('image/')) fp.innerHTML=`<img src="${notice.fileData}" alt="${notice.fileName||'이미지'}">`;
+    else fp.innerHTML=`<a href="${notice.fileData}" download="${notice.fileName||'file'}" class="file-link">📎 ${notice.fileName||'첨부파일'}</a>`;
+    card.appendChild(fp);
+  }
+  const editBtn=document.createElement('button'); editBtn.className='edit-btn'; editBtn.type='button'; editBtn.innerText='수정';
+  editBtn.onclick=()=>handleEdit(notice.id,type);
+  const delBtn=document.createElement('button'); delBtn.className='delete-btn'; delBtn.type='button'; delBtn.innerText='삭제';
+  delBtn.onclick=()=>handleDelete(notice.id,type);
+  card.appendChild(editBtn); card.appendChild(delBtn);
+  return card;
+}
 
-    async function handleDelete(docId,type){
-      try{
-        const pw=prompt('삭제 비밀번호:');
-        if(pw!==PASSWORD){alert('비밀번호 틀림');return;}
-        if(!confirm('정말 삭제?')) return;
-        const col = type==='general'?'generalNotices':'classNotices';
-        await deleteDoc(doc(db,col,docId));
-        await loadNotices();
-      }catch(e){console.error(e); alert('삭제 오류')}
-    }
+async function handleDelete(docId,type){
+  const pw=prompt('삭제 비밀번호:');
+  if(pw!==PASSWORD){alert('비밀번호 틀림'); return;}
+  if(!confirm('정말 삭제?')) return;
+  const col = type==='general'?'generalNotices':'classNotices';
+  await deleteDoc(doc(db,col,docId));
+  loadNotices();
+}
 
-    async function handleEdit(docId,type){
-      try{
-        const pw=prompt('수정 비밀번호:');
-        if(pw!==PASSWORD){alert('비밀번호 틀림');return;}
-        const sourceArr = type==='general'?generalNotices:(classNotices[currentClass]||[]);
-        const docObj = sourceArr.find(x=>x.id===docId);
-        if(!docObj){alert('공지 없음'); return;}
-        const newDate=prompt('날짜',docObj.date||'');
-        const newTitle=prompt('제목',docObj.title||'');
-        const newDesc=prompt('내용',docObj.description||'');
-        const updates={};
-        if(newDate!==null) updates.date=newDate;
-        if(newTitle!==null) updates.title=newTitle;
-        if(newDesc!==null) updates.description=newDesc;
-        const col=type==='general'?'generalNotices':'classNotices';
-        await updateDoc(doc(db,col,docId),updates);
-        await loadNotices();
-      }catch(e){console.error(e); alert('수정 오류')}
-    }
+async function handleEdit(docId,type){
+  const pw=prompt('수정 비밀번호:');
+  if(pw!==PASSWORD){alert('비밀번호 틀림'); return;}
+  const arr = type==='general'?generalNotices:(classNotices[currentClass]||[]);
+  const docObj = arr.find(x=>x.id===docId);
+  if(!docObj){alert('공지 없음'); return;}
+  const newDate=prompt('날짜',docObj.date||'');
+  const newTitle=prompt('제목',docObj.title||'');
+  const newDesc=prompt('내용',docObj.description||'');
+  const updates={};
+  if(newDate!==null) updates.date=newDate;
+  if(newTitle!==null) updates.title=newTitle;
+  if(newDesc!==null) updates.description=newDesc;
+  const col=type==='general'?'generalNotices':'classNotices';
+  await updateDoc(doc(db,col,docId),updates);
+  loadNotices();
+}
 
-    function normalizeClassInput(raw){ return String(raw).replace(/\s+/g,'').replace(/\u3000/g,''); }
+// 반 선택
+function normalizeClassInput(raw){ return String(raw).replace(/\s+/g,'').replace(/\u3000/g,''); }
+function setClass(){
+  const raw=document.getElementById('class-input').value;
+  const input=normalizeClassInput(raw);
+  const m=input.match(/^1학년([1-9])반$/);
+  if(!m){alert('입력 형식 올바르지 않음'); return;}
+  currentClass=`1학년${m[1]}반`;
+  document.getElementById('class-select').classList.add('hidden');
+  document.getElementById('main-container').classList.remove('hidden');
+  document.getElementById('class-title').textContent=`📝 ${currentClass} 수행평가`;
+  renderNotices();
+}
+function goBack(){
+  currentClass=null;
+  document.getElementById('main-container').classList.add('hidden');
+  document.getElementById('class-select').classList.remove('hidden');
+}
 
-    function setClass(){
-      const raw=document.getElementById('class-input').value;
-      const input=normalizeClassInput(raw);
-      const m=input
+// 공지 추가
+function openAddForm(type){
+  const pw=prompt('공지 추가 비밀번호:');
+  if(pw!==PASSWORD){alert('비밀번호 틀림'); return;}
+  if(type==='class' && !currentClass){alert('반 선택 먼저'); return;}
+  addingType=type;
+  document.getElementById('main-container').classList.add('hidden');
+  document.getElementById('add-form').classList.remove('hidden');
+}
+function cancelAdd(){
+  document.getElementById('add-form').classList.add('hidden');
+  document.getElementById('main-container').classList.remove('hidden');
+  addingType=null;
+}
+
+// 등록
+async function submitNotice(){
+  const date=document.getElementById('add-date').value.trim();
+  const title=document.getElementById('add-title').value.trim();
+  const desc=document.getElementById('add-desc').value.trim();
+  const fileInput=document.getElementById('add-file');
+  const file=fileInput.files[0];
+  if(!date || !title || !desc){alert('모든 항목 입력'); return;}
+  if(!addingType){alert('추가 유형 지정 필요'); return;}
+  const notice={date,title,description:desc,createdAt:serverTimestamp()};
+  if(file){
+    notice.fileName=file.name;
+    notice.fileType=file.type;
+    notice.fileData=await readFileAsDataURL(file);
+  }
+  const col = addingType==='general'?'generalNotices':'classNotices';
+  const payload = addingType==='class'?{className:currentClass,...notice}:notice;
+  await addDoc(collection(db,col),payload);
+  document.getElementById('add-date').value='';
+  document.getElementById('add-title').value='';
+  document.getElementById('add-desc').value='';
+  document.getElementById('add-file').value='';
+  cancelAdd();
+  loadNotices();
+}
+
+// 이벤트 바인딩
+document.getElementById('class-confirm-btn').addEventListener('click',setClass);
+document.getElementById('back-btn').addEventListener('click',goBack);
+document.getElementById('add-general-btn').addEventListener('click',()=>openAddForm('general'));
+document.getElementById('add-class-btn').addEventListener('click',()=>openAddForm('class'));
+document.getElementById('submit-add-btn').addEventListener('click',submitNotice);
+document.getElementById('cancel-add-btn').addEventListener('click',cancelAdd);
+document.getElementById('class-input').addEventListener('keydown',e=>{if(e.key==='Enter') setClass();});
+
+loadNotices();
+</script>
+
+</body>
+</html>
