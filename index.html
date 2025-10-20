@@ -8,28 +8,49 @@
     body {
       font-family: 'Segoe UI', sans-serif;
       background-color: #f5f8fc;
-      margin: 0; padding: 20px; color: #333;
+      margin: 0;
+      padding: 20px;
+      color: #333;
     }
-    header { text-align: center; padding: 20px 0; background-color: #1c3c78; color: white; }
+    header {
+      text-align: center;
+      padding: 20px 0;
+      background-color: #1c3c78;
+      color: white;
+    }
     .container { max-width: 900px; margin: 0 auto; }
     h2 { border-bottom: 2px solid #1c3c78; padding-bottom: 5px; margin-top: 40px; }
-    .card { background-color: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; }
+    .card {
+      background-color: white; padding: 15px 20px;
+      border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px; position: relative;
+    }
     .date { font-weight: bold; color: #1c3c78; }
     .title { font-size: 18px; margin: 5px 0; }
     .description { font-size: 14px; color: #555; white-space: pre-wrap; }
-    .edit-btn, .delete-btn { position: absolute; top: 15px; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; color: white; }
+    .edit-btn, .delete-btn {
+      position: absolute; top: 15px; border: none; padding: 6px 10px;
+      border-radius: 6px; cursor: pointer; font-size: 12px; color: white;
+    }
     .edit-btn { right: 70px; background-color: #1c3c78; }
     .delete-btn { right: 15px; background-color: #c0392b; }
     .edit-btn:hover { background-color: #163063; }
     .delete-btn:hover { background-color: #962d22; }
     textarea, input { width: 100%; box-sizing: border-box; margin-top: 4px; font-family: inherit; }
     .hidden { display: none; }
-    .add-btn { display: block; margin: 20px auto; padding: 10px 20px; background-color: #1c3c78; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    .add-btn {
+      display: block; margin: 20px auto; padding: 10px 20px;
+      background-color: #1c3c78; color: white; border: none;
+      border-radius: 8px; font-size: 16px; cursor: pointer;
+    }
     .add-btn:hover { background-color: #163063; }
     .class-select { text-align: center; margin: 40px 0; }
     .class-select input { padding: 8px; font-size: 16px; }
     .class-select button { padding: 8px 16px; margin-left: 5px; font-size: 16px; cursor: pointer; }
-    .back-btn { margin: 15px 0; padding: 8px 16px; background-color: #888; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    .back-btn {
+      margin: 15px 0; padding: 8px 16px; background-color: #888;
+      color: white; border: none; border-radius: 6px; cursor: pointer;
+    }
     .back-btn:hover { background-color: #555; }
     .file-preview { margin-top: 10px; }
     .file-preview img { max-width: 200px; border-radius: 6px; margin-top: 5px; display:block; }
@@ -42,7 +63,6 @@
     <p>오늘의 공지사항을 빠르게 확인하세요</p>
   </header>
 
-  <!-- 반 선택 -->
   <div id="class-select" class="class-select">
     <h2>자신의 반을 입력하세요</h2>
     <p>👉 띄어쓰기 없이 입력하세요 (예: 1학년7반)</p>
@@ -50,9 +70,9 @@
     <button id="class-confirm-btn">확인</button>
   </div>
 
-  <!-- 공지 화면 -->
   <div class="container hidden" id="main-container">
     <button class="back-btn" id="back-btn">← 이전으로</button>
+
     <button class="add-btn" id="add-general-btn">+ 공지 추가하기</button>
     <h2>📅 오늘의 행사</h2>
     <div id="notice-list"></div>
@@ -62,25 +82,25 @@
     <div id="class-notice-list"></div>
   </div>
 
-  <!-- 공지 추가 -->
   <div id="add-form" class="container hidden">
     <h2>📌 새 공지 추가</h2>
     <input type="text" id="add-date" placeholder="날짜 (예: 2025-07-25)">
     <input type="text" id="add-title" placeholder="제목">
     <textarea id="add-desc" placeholder="내용"></textarea>
-    <input type="file" id="add-file" accept=".pdf,image/*"><br><br>
+    <input type="file" id="add-file" accept=".pdf,image/*">
+    <br><br>
     <button class="add-btn" id="submit-add-btn">등록</button>
     <button class="back-btn" id="cancel-add-btn">취소</button>
   </div>
 
-  <!-- 🔥 Firebase Firestore 연동 -->
+  <!-- ✅ Firebase 연동 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import {
       getFirestore, collection, addDoc, getDocs, deleteDoc, doc
     } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // 🔥 Firebase 설정을 입력하세요
+    // 🔥 여기에 본인 Firebase 설정을 입력하세요
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -96,9 +116,11 @@
     const PASSWORD = "0922";
     let currentClass = null;
     let addingType = null;
+
     let generalNotices = [];
     let classNotices = {};
 
+    // --- Firestore 데이터 불러오기 ---
     async function loadNotices() {
       generalNotices = [];
       classNotices = {};
@@ -108,39 +130,14 @@
 
       const classSnap = await getDocs(collection(db, "classNotices"));
       classSnap.forEach(docSnap => {
-        const data = docSnap.data();
-        const c = data.className;
-        if (!classNotices[c]) classNotices[c] = [];
-        classNotices[c].push({ id: docSnap.id, ...data });
+        const d = docSnap.data();
+        if (!classNotices[d.className]) classNotices[d.className] = [];
+        classNotices[d.className].push({ id: docSnap.id, ...d });
       });
-
       renderNotices();
     }
 
-    function normalizeClassInput(raw) {
-      if (!raw) return "";
-      return String(raw).replace(/\s+/g, "").replace(/\u3000/g, "");
-    }
-
-    function setClass() {
-      const raw = document.getElementById("class-input").value;
-      const input = normalizeClassInput(raw);
-      const m = input.match(/^1학년([1-9])반$/);
-      if (!m) return alert("입력 형식이 올바르지 않습니다. 예: 1학년7반");
-      currentClass = `1학년${m[1]}반`;
-
-      document.getElementById("class-select").classList.add("hidden");
-      document.getElementById("main-container").classList.remove("hidden");
-      document.getElementById("class-title").textContent = `📝 ${currentClass} 수행평가`;
-      loadNotices();
-    }
-
-    function goBack() {
-      currentClass = null;
-      document.getElementById("main-container").classList.add("hidden");
-      document.getElementById("class-select").classList.remove("hidden");
-    }
-
+    // --- 공지 렌더링 ---
     function renderNotices() {
       const list = document.getElementById("notice-list");
       list.innerHTML = "";
@@ -148,51 +145,41 @@
 
       const classList = document.getElementById("class-notice-list");
       classList.innerHTML = "";
-      const arr = currentClass && classNotices[currentClass] ? classNotices[currentClass] : [];
+      const arr = (currentClass && classNotices[currentClass]) ? classNotices[currentClass] : [];
       arr.forEach((n, i) => classList.prepend(makeCard(n, i, "class")));
     }
 
     function makeCard(notice, index, type) {
       const card = document.createElement("div");
       card.className = "card";
-
-      const dateDiv = document.createElement("div");
-      dateDiv.className = "date";
-      dateDiv.innerText = notice.date || "";
-      const titleDiv = document.createElement("div");
-      titleDiv.className = "title";
-      titleDiv.innerText = notice.title || "";
-      const descDiv = document.createElement("div");
-      descDiv.className = "description";
-      descDiv.innerText = notice.description || "";
-      card.appendChild(dateDiv);
-      card.appendChild(titleDiv);
-      card.appendChild(descDiv);
-
+      card.innerHTML = `
+        <div class="date">${notice.date || ""}</div>
+        <div class="title">${notice.title || ""}</div>
+        <div class="description">${notice.description || ""}</div>
+      `;
       if (notice.fileData) {
         const fp = document.createElement("div");
         fp.className = "file-preview";
-        if (notice.fileType.startsWith("image/")) {
-          const img = document.createElement("img");
-          img.src = notice.fileData;
-          fp.appendChild(img);
+        if (notice.fileType && notice.fileType.startsWith("image/")) {
+          fp.innerHTML = `<img src="${notice.fileData}" alt="${notice.fileName}">`;
         } else {
-          const a = document.createElement("a");
-          a.href = notice.fileData;
-          a.download = notice.fileName;
-          a.className = "file-link";
-          a.innerText = notice.fileName;
-          fp.appendChild(a);
+          fp.innerHTML = `<a href="${notice.fileData}" class="file-link" download="${notice.fileName}">📎 ${notice.fileName}</a>`;
         }
         card.appendChild(fp);
       }
 
+      const editBtn = document.createElement("button");
+      editBtn.className = "edit-btn";
+      editBtn.innerText = "수정";
+      editBtn.onclick = () => alert("수정 기능은 곧 추가됩니다!");
+
       const delBtn = document.createElement("button");
       delBtn.className = "delete-btn";
       delBtn.innerText = "삭제";
-      delBtn.addEventListener("click", () => deleteNotice(index, type));
-      card.appendChild(delBtn);
+      delBtn.onclick = () => deleteNotice(index, type);
 
+      card.appendChild(editBtn);
+      card.appendChild(delBtn);
       return card;
     }
 
@@ -202,11 +189,27 @@
       let idToDelete = null;
       if (type === "general") idToDelete = generalNotices[index]?.id;
       else idToDelete = classNotices[currentClass]?.[index]?.id;
+      if (!idToDelete) return;
+      await deleteDoc(doc(db, type === "general" ? "generalNotices" : "classNotices", idToDelete));
+      alert("삭제 완료");
+      loadNotices();
+    }
 
-      if (idToDelete) {
-        await deleteDoc(doc(db, type === "general" ? "generalNotices" : "classNotices", idToDelete));
-        await loadNotices();
-      }
+    function setClass() {
+      const val = document.getElementById("class-input").value.trim();
+      const m = val.match(/^1학년([1-9])반$/);
+      if (!m) return alert("형식이 올바르지 않습니다. 예: 1학년7반");
+      currentClass = `1학년${m[1]}반`;
+      document.getElementById("class-select").classList.add("hidden");
+      document.getElementById("main-container").classList.remove("hidden");
+      document.getElementById("class-title").textContent = `📝 ${currentClass} 수행평가`;
+      renderNotices();
+    }
+
+    function goBack() {
+      currentClass = null;
+      document.getElementById("main-container").classList.add("hidden");
+      document.getElementById("class-select").classList.remove("hidden");
     }
 
     function openAddForm(type) {
@@ -223,6 +226,7 @@
       addingType = null;
     }
 
+    // ✅ 수정된 공지 등록 함수
     async function submitNotice() {
       const date = document.getElementById("add-date").value.trim();
       const title = document.getElementById("add-title").value.trim();
@@ -230,21 +234,36 @@
       const fileInput = document.getElementById("add-file");
       const file = fileInput.files[0];
 
-      if (!date || !title || !description) return alert("모든 항목을 입력하세요.");
+      if (!date || !title || !description) {
+        alert("모든 항목을 입력하세요.");
+        return;
+      }
 
-      let fileData = null, fileName = null, fileType = null;
       if (file) {
         const reader = new FileReader();
         reader.onload = async (e) => {
-          fileData = e.target.result;
-          fileName = file.name;
-          fileType = file.type;
+          const fileData = e.target.result;
+          const fileName = file.name;
+          const fileType = file.type;
+
           await storeNotice({ date, title, description, fileData, fileName, fileType });
+          alert("등록 완료!");
+          await loadNotices();
+          cancelAdd();
         };
         reader.readAsDataURL(file);
       } else {
         await storeNotice({ date, title, description });
+        alert("등록 완료!");
+        await loadNotices();
+        cancelAdd();
       }
+
+      // 입력창 초기화
+      document.getElementById("add-date").value = "";
+      document.getElementById("add-title").value = "";
+      document.getElementById("add-desc").value = "";
+      document.getElementById("add-file").value = "";
     }
 
     async function storeNotice(notice) {
@@ -253,8 +272,6 @@
       } else if (addingType === "class") {
         await addDoc(collection(db, "classNotices"), { className: currentClass, ...notice });
       }
-      cancelAdd();
-      await loadNotices();
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -264,6 +281,7 @@
       document.getElementById("add-class-btn").addEventListener("click", () => openAddForm("class"));
       document.getElementById("submit-add-btn").addEventListener("click", submitNotice);
       document.getElementById("cancel-add-btn").addEventListener("click", cancelAdd);
+      loadNotices();
     });
   </script>
 </body>
