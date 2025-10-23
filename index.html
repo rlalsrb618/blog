@@ -69,16 +69,18 @@ textarea,input{width:100%; box-sizing:border-box; margin-top:4px; font-family:in
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAnalytics, getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 // ==== Firebase 설정 ====
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAxyzwEpyLDxBjS9Wn2wjgzrphx4surn5g",
+  authDomain: "jungwonjd2.firebaseapp.com",
+  databaseURL: "https://jungwonjd2-default-rtdb.firebaseio.com",
+  projectId: "jungwonjd2",
+  storageBucket: "jungwonjd2.firebasestorage.app",
+  messagingSenderId: "197915083889",
+  appId: "1:197915083889:web:5c85a163afcf7311eb07d0"
+  measurementId: "G-WWRSJ0J6LG"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
