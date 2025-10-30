@@ -491,7 +491,6 @@ async function handleDelete(category, n){
 }
 
 // ====== 수행평가 차시 (반별 편집) ======
-// ====== 수행평가 차시 (반별 편집) ======
 function openSessionPanel(assessment){
   if(!currentClass) return alert('먼저 반을 선택하세요.');
   $('#sp-assessment-title').textContent = assessment.title;
@@ -558,7 +557,6 @@ $('#sp-cancel').addEventListener('click', ()=>{
   $('#session-panel').classList.add('hidden');
   $('#main').classList.remove('hidden');
 });
-
 
 // =============== 권한 체크 ===============
 async function requireMaster(){
