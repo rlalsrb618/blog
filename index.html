@@ -192,16 +192,27 @@ const $ = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
 const setDebug = t => ($('#debug')||{}).innerText = t;
 
-// crypto utils (SHA-256 to hex)
-async function sha256Hex(str){
+async function sha256Hex(str) {
+  if (typeof str !== 'string') {
+    throw new TypeError('sha256Hex expects a string');
+  }
+  // SubtleCrypto 존재 확인
+  const cryptoObj = window.crypto ?? window.msCrypto; // msCrypto는 구형 IE 대응(여전히 존재하면)
+  if (!cryptoObj || !cryptoObj.subtle) {
+    throw new Error('Web Crypto API not available. Ensure secure context (HTTPS or localhost) and modern browser.');
+  }
+
   const enc = new TextEncoder();
-  const buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
-  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  const buf = await cryptoObj.subtle.digest('SHA-256', enc.encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
-async function verifyPassword(input, hash){
+
+async function verifyPassword(input, hash) {
+  if (typeof hash !== 'string') throw new TypeError('hash must be a string');
   const h = await sha256Hex(input);
   return h === hash;
 }
+
 
 // =============== 데이터 로드 ===============
 async function loadSecurity(){
