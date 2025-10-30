@@ -305,48 +305,20 @@ function makeCard(n, category){
 
 function makeAssessmentCard(n){
   const el = makeCard(n,'assessment');
-
+  // session quick view (default vs class override)
   const wrap = document.createElement('div');
   wrap.className='help';
-  wrap.style.whiteSpace = 'pre-wrap'; // 줄바꿈 표시를 위해 추가
-
-  // 반별 차시 날짜 불러오기
-  async function loadPerClassDates(){
-    if(!currentClass){
-      wrap.textContent = '반을 선택하세요.';
-      return;
-    }
-
-    const ref = doc(db,'assessments', n.id, 'sessions', currentClass);
-    const sdoc = await getDoc(ref);
-    const classDates = sdoc.exists() ? (sdoc.data().items || []) : [];
-    const dateMap = {};
-    classDates.forEach(x => { dateMap[x.order] = x.date || ''; });
-
-    const lines = (n.defaultSessions || [])
-      .slice()
-      .sort((a,b)=>(a.order||0)-(b.order||0))
-      .map(x=>{
-        const date = dateMap[x.order] ? ` (${dateMap[x.order]})` : '';
-        return `${x.order}차시: ${x.text}${date}`;
-      });
-
-    wrap.textContent = lines.length ? `기본 차시:\n` + lines.join('\n') : '기본 차시 없음';
-  }
-
-  // 즉시 실행 (비동기)
-  loadPerClassDates();
-
+  const list = (n.defaultSessions||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(x=>`${x.order}차시: ${x.text}`).join(' \u00B7 ');
+  wrap.textContent = list ? `기본 차시: ${list}` : '기본 차시 없음';
   el.appendChild(wrap);
 
-  // 반별 차시 편집 버튼
+  // open per-class session editor
   const btn = document.createElement('button');
   btn.className = 'btn ghost';
   btn.textContent = '반별 차시 편집';
   btn.style.marginTop = '8px';
   btn.addEventListener('click', ()=> openSessionPanel(n));
   el.appendChild(btn);
-
   return el;
 }
 
