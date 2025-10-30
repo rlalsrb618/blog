@@ -3,75 +3,177 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>중원고 공지 알리미 (단순 비밀번호 버전)</title>
+<title>중원고 공지 알리미 (개편)</title>
 <style>
-body{font-family:'Segoe UI',system-ui,-apple-system,Malgun Gothic,sans-serif;background:#f8f9fb;margin:0;color:#333}
-header{background:#1c3c78;color:#fff;text-align:center;padding:24px 12px}
-.container{max-width:980px;margin:0 auto;padding:20px}
-.btn{background:#1c3c78;color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
-.btn.danger{background:#c0392b}
-.btn.muted{background:#888}
-select,input,textarea{width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font:inherit}
-.card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.1);margin-bottom:12px}
+  :root{
+    --primary:#1c3c78; --bg:#f5f8fc; --danger:#c0392b; --muted:#777;
+  }
+  body{font-family:'Segoe UI',system-ui,-apple-system,Apple SD Gothic Neo,Malgun Gothic,sans-serif;background:var(--bg);margin:0;color:#333}
+  header{background:var(--primary);color:#fff;text-align:center;padding:24px 12px}
+  .container{max-width:980px;margin:0 auto;padding:20px}
+  h2{margin:24px 0 12px;border-bottom:2px solid var(--primary);padding-bottom:6px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:16px 18px;margin:12px 0;position:relative}
+  .date{font-weight:600;color:var(--primary)}
+  .title{font-size:18px;margin:6px 0}
+  .description{white-space:pre-wrap;color:#555}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:8px;padding:9px 14px;background:var(--primary);color:#fff;cursor:pointer;font-weight:600}
+  .btn.muted{background:#888}
+  .btn.danger{background:var(--danger)}
+  .btn.ghost{background:#e9eef8;color:#1c3c78}
+  .btn + .btn{margin-left:8px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px}
+  select, input[type="text"], input[type="date"], textarea{width:100%;box-sizing:border-box;border:1px solid #d6dbe6;border-radius:8px;padding:10px 12px;font:inherit}
+  textarea{min-height:120px}
+  .hidden{display:none}
+  .file-preview{margin-top:10px}
+  .file-preview img{max-width:220px;border-radius:8px;margin-top:6px;cursor:pointer}
+  .file-link{display:inline-block;margin-top:6px;color:var(--primary);text-decoration:underline}
+  .grid{display:grid;gap:16px}
+  @media (min-width:840px){.grid.two{grid-template-columns:1fr 1fr}}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;background:#eef2ff;color:#1c3c78;font-size:12px;font-weight:700}
+  .actions{position:absolute;top:12px;right:12px}
+  .actions .btn{padding:6px 10px;font-size:12px}
+  .section-head{display:flex;align-items:center;justify-content:space-between}
+  /* Lightbox */
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
+  .lightbox img{max-width:95vw;max-height:90vh;border-radius:10px}
+  .lightbox.show{display:flex}
+  .lightbox .btn{position:absolute;top:18px;right:18px}
+  /* Session editor */
+  .session-item{display:flex;gap:8px;margin-top:8px}
+  .session-item input{flex:1}
+  .help{color:var(--muted);font-size:12px;margin-top:6px}
+  .stack-sm{display:grid;gap:10px}
 </style>
 </head>
 <body>
-<header>
-  <h1>중원고 공지 알리미</h1>
-</header>
-<section class="container">
-  <div>
-    <label>반 선택</label>
-    <select id="class-select">
-      <option value="" selected disabled>반 선택</option>
-      <option>1학년1반</option>
-      <option>1학년2반</option>
-      <option>1학년3반</option>
-      <option>1학년4반</option>
-      <option>1학년5반</option>
-      <option>1학년6반</option>
-      <option>1학년7반</option>
-      <option>1학년8반</option>
-      <option>1학년9반</option>
-    </select>
-  </div>
-  <button id="btn-enter" class="btn">확인</button>
-</section>
-<section class="container hidden" id="main">
-  <div style="display:flex;gap:10px;margin-bottom:12px">
-    <button id="btn-back" class="btn muted">← 반 다시 선택</button>
-    <button id="btn-add" class="btn">+ 글 추가</button>
-  </div>
-  <h2>📅 행사 (공통)</h2>
-  <div id="events"></div>
-  <h2>📝 수행평가</h2>
-  <div id="assessments"></div>
-  <h2 id="class-title">📣 반별 공지</h2>
-  <div id="classNotices"></div>
-</section>
-<section class="container hidden" id="editor">
-  <h2 id="editor-title">글 작성</h2>
-  <label>카테고리</label>
-  <select id="category">
-    <option value="event">행사</option>
-    <option value="assessment">수행평가</option>
-    <option value="class">반별 공지</option>
-  </select>
-  <label>제목</label><input id="title" type="text">
-  <label>날짜</label><input id="date" type="date">
-  <label>내용</label><textarea id="desc"></textarea>
-  <label>이미지</label><input id="file" type="file" accept="image/*">
-  <div style="margin-top:10px">
-    <button id="btn-save" class="btn">저장</button>
-    <button id="btn-cancel" class="btn muted">취소</button>
-  </div>
-</section>
+  <header>
+    <h1>중원고 행사·수행평가·반별공지 알리미</h1>
+    <p>오늘의 공지사항을 빠르게 확인하세요</p>
+  </header>
+
+  <!-- 반 선택 -->
+  <section id="class-select" class="container">
+    <h2>자신의 반을 선택하세요</h2>
+    <div class="grid two">
+      <div>
+        <label for="class-select-input" class="help">1학년 1~9반</label>
+        <select id="class-select-input">
+          <option value="" selected disabled>반 선택</option>
+          <option>1학년1반</option>
+          <option>1학년2반</option>
+          <option>1학년3반</option>
+          <option>1학년4반</option>
+          <option>1학년5반</option>
+          <option>1학년6반</option>
+          <option>1학년7반</option>
+          <option>1학년8반</option>
+          <option>1학년9반</option>
+        </select>
+      </div>
+      <div class="stack-sm">
+        <button id="class-confirm-btn" class="btn">확인</button>
+        <div id="debug" class="help">상태: 대기중</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 메인 -->
+  <section id="main" class="container hidden">
+    <div class="toolbar">
+      <button id="nav-back" class="btn muted">← 반 다시 선택</button>
+      <button id="btn-add" class="btn">+ 글 추가</button>
+    </div>
+
+    <div class="grid two">
+      <div>
+        <div class="section-head">
+          <h2>📅 행사 (전체공통)</h2>
+          <span class="badge">행사</span>
+        </div>
+        <div id="list-events"></div>
+      </div>
+      <div>
+        <div class="section-head">
+          <h2 id="assess-title">📝 수행평가</h2>
+          <span class="badge">수행평가</span>
+        </div>
+        <div id="list-assessments"></div>
+      </div>
+    </div>
+
+    <h2 id="class-title">📣 반별 공지</h2>
+    <div id="list-class"></div>
+  </section>
+
+  <!-- 작성/수정 폼 -->
+  <section id="editor" class="container hidden">
+    <h2 id="editor-title">새 글</h2>
+    <div class="grid two">
+      <div class="stack-sm">
+        <label>카테고리</label>
+        <select id="f-category">
+          <option value="event">행사 (전체공통)</option>
+          <option value="assessment">수행평가 (내용 공통)</option>
+          <option value="class">반별 공지</option>
+        </select>
+      </div>
+      <div class="stack-sm">
+        <label>날짜</label>
+        <input id="f-date" type="date" />
+      </div>
+    </div>
+
+    <div class="grid two">
+      <div class="stack-sm"><label>제목</label><input id="f-title" type="text" placeholder="제목" /></div>
+      <div class="stack-sm"><label>첨부파일 (이미지/PDF)</label><input id="f-file" type="file" accept="image/*,.pdf" /></div>
+    </div>
+
+    <div class="stack-sm" style="margin-top:12px">
+      <label>내용</label>
+      <textarea id="f-desc" placeholder="내용" ></textarea>
+      <div id="file-preview" class="file-preview"></div>
+    </div>
+
+    <!-- 수행평가 초기 차시 입력 (옵션) -->
+    <div id="session-editor" class="hidden" style="margin-top:18px">
+      <div class="section-head"><h3>차시 정보 (+/-로 추가)</h3><span class="help">예시: 1차시 : 보고서 안내</span></div>
+      <div id="session-list"></div>
+      <div class="toolbar">
+        <button id="btn-add-session" class="btn ghost">+ 차시 추가</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button id="btn-save" class="btn">저장</button>
+      <button id="btn-cancel" class="btn muted">취소</button>
+    </div>
+  </section>
+
+  <!-- 차시(수행평가) per-class 편집 패널 -->
+  <section id="session-panel" class="container hidden">
+    <div class="section-head"><h2>차시 편집 (반별 비밀번호 필요)</h2><span class="badge" id="sp-assessment-title">-</span></div>
+    <div id="class-session-list"></div>
+    <div class="toolbar">
+      <button id="sp-add" class="btn ghost">+ 차시 추가</button>
+      <button id="sp-save" class="btn">저장</button>
+      <button id="sp-cancel" class="btn muted">닫기</button>
+    </div>
+  </section>
+
+  <!-- 이미지 라이트박스 -->
+  <div id="lightbox" class="lightbox"><button class="btn">닫기</button><img alt="preview" /></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, collection, doc, getDocs, getDoc, addDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// ================= Firebase 설정 =================
 const firebaseConfig = {
   apiKey: "AIzaSyAxyzwEpyLDxBjS9Wn2wjgzrphx4surn5g",
   authDomain: "jungwonjd2.firebaseapp.com",
+  databaseURL: "https://jungwonjd2-default-rtdb.firebaseio.com",
   projectId: "jungwonjd2",
   storageBucket: "jungwonjd2.firebasestorage.app",
   messagingSenderId: "197915083889",
@@ -80,73 +182,416 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let currentClass=null;
-let masterPassword="0922";
-let classPasswords={"1학년1반":"1111","1학년2반":"2222"}; // 예시
-const $=s=>document.querySelector(s);
+// ================= 전역 상태 =================
+let currentClass = null;
+let editContext = null; // {mode:'create'|'edit', category, col, id}
+let classes = {};       // {"1학년1반": {passwordHash:"..."}, ...}
+let masterHash = null;  // settings/master.passwordHash
 
-$('#btn-enter').onclick=()=>{
-  const v=$('#class-select').value;
-  if(!v) return alert('반을 선택하세요');
-  currentClass=v;
-  $('#main').classList.remove('hidden');
-  $('#class-title').textContent=`📣 ${v} 반별 공지`;
-  loadAll();
-  document.querySelector('section.container').classList.add('hidden');
-};
-$('#btn-back').onclick=()=>location.reload();
-$('#btn-add').onclick=()=>{
-  $('#editor').classList.remove('hidden');
-  $('#main').classList.add('hidden');
-};
-$('#btn-cancel').onclick=()=>{
-  $('#editor').classList.add('hidden');
-  $('#main').classList.remove('hidden');
-};
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+const setDebug = t => ($('#debug')||{}).innerText = t;
+
+// crypto utils (SHA-256 to hex)
+async function sha256Hex(str){
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function verifyPassword(input, hash){
+  const h = await sha256Hex(input);
+  return h === hash;
+}
+
+// =============== 데이터 로드 ===============
+async function loadSecurity(){
+  // load master
+  const sDoc = await getDoc(doc(db,'settings','master'));
+  masterHash = sDoc.exists()? (sDoc.data().passwordHash||null) : null;
+  // load classes
+  const cSnap = await getDocs(collection(db,'classes'));
+  classes = {};
+  cSnap.forEach(d=>{ classes[d.id] = { ...(d.data()) }; });
+}
 
 async function loadAll(){
-  const ev=await getDocs(collection(db,'events'));
-  const evBox=$('#events');evBox.innerHTML='';
-  ev.forEach(d=>evBox.innerHTML+=cardHTML(d.data(),'event'));
-  const as=await getDocs(collection(db,'assessments'));
-  const asBox=$('#assessments');asBox.innerHTML='';
-  as.forEach(d=>asBox.innerHTML+=cardHTML(d.data(),'assessment'));
-  const cl=await getDocs(collection(db,'classNotices'));
-  const clBox=$('#classNotices');clBox.innerHTML='';
-  cl.forEach(d=>{if(d.data().className===currentClass)clBox.innerHTML+=cardHTML(d.data(),'class')});
-}
-function cardHTML(n,type){
-  return `<div class='card'><b>${n.title||'(제목없음)'}</b><br>${n.date||''}<p>${n.description||''}</p>${n.image?`<img src='${n.image}' style='max-width:200px'>`:''}</div>`;
+  await Promise.all([loadSecurity(), loadEvents(), loadAssessments(), loadClassNotices()]);
+  renderAll();
+  setDebug('데이터 불러오기 완료');
 }
 
-$('#btn-save').onclick=async()=>{
-  const category=$('#category').value;
-  const title=$('#title').value.trim();
-  const desc=$('#desc').value.trim();
-  const date=$('#date').value;
-  const file=$('#file').files[0];
-  if(!title||!desc||!date) return alert('빈칸을 채우세요');
-  let pass=prompt('비밀번호 입력 (마스터 또는 반 비번)');
-  if(!pass) return;
-  if(category==='event'||category==='assessment'){
-    if(pass!==masterPassword) return alert('마스터 비밀번호가 틀림');
+// Collections:
+// events (전체공통)
+// assessments (공통 본문) {date,title,description,defaultSessions:[{order,text}], file{ name,type,data }}
+//   assessments/{id}/sessions/{className} { items:[{order,text}] }
+// classNotices (반별) {className, date,title,description, file}
+
+let events = [];
+let assessments = []; // {id, ...}
+let classNotices = {}; // {className: [notice,...]}
+
+async function loadEvents(){
+  events = [];
+  const snap = await getDocs(collection(db,'events'));
+  snap.forEach(d=>events.push({id:d.id, ...d.data()}));
+}
+async function loadAssessments(){
+  assessments = [];
+  const snap = await getDocs(collection(db,'assessments'));
+  snap.forEach(d=>assessments.push({id:d.id, ...d.data()}));
+}
+async function loadClassNotices(){
+  classNotices = {};
+  const snap = await getDocs(collection(db,'classNotices'));
+  snap.forEach(d=>{
+    const c = d.data().className || 'unknown';
+    (classNotices[c] ||= []).push({id:d.id, ...d.data()});
+  });
+}
+
+// =============== UI 렌더 ===============
+function renderAll(){
+  // header labels
+  if(currentClass){
+    $('#assess-title').textContent = `📝 수행평가 (현재: ${currentClass})`;
+    $('#class-title').textContent = `📣 ${currentClass} 반별 공지`;
   }
-  if(category==='class'){
-    const clsOk=classPasswords[currentClass]===pass||pass===masterPassword;
-    if(!clsOk) return alert('비밀번호 틀림');
+  // events
+  const evBox = $('#list-events'); evBox.innerHTML = '';
+  events.slice().sort((a,b)=> (a.date||'').localeCompare(b.date)).reverse().forEach(n=>evBox.appendChild(makeCard(n,'event')));
+  // assessments
+  const asBox = $('#list-assessments'); asBox.innerHTML = '';
+  assessments.slice().sort((a,b)=> (a.date||'').localeCompare(b.date)).reverse().forEach(n=>asBox.appendChild(makeAssessmentCard(n)));
+  // class notices
+  const clBox = $('#list-class'); clBox.innerHTML = '';
+  const arr = currentClass ? (classNotices[currentClass]||[]) : [];
+  arr.slice().sort((a,b)=> (a.date||'').localeCompare(b.date)).reverse().forEach(n=>clBox.appendChild(makeCard(n,'class')));
+}
+
+function filePreviewHTML(n){
+  if(!n || !n.fileData) return '';
+  if((n.fileType||'').startsWith('image/')){
+    return `<div class="file-preview"><img data-preview="1" src="${n.fileData}" alt="${n.fileName||'이미지'}" /></div>`;
   }
-  let imageData='';
+  return `<a class="file-link" href="${n.fileData}" download="${n.fileName||'file'}">📎 ${n.fileName||'첨부파일'}</a>`;
+}
+
+function makeCard(n, category){
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="date">${n.date||''}</div>
+    <div class="title">${n.title||''}</div>
+    <div class="description">${n.description||''}</div>
+    ${filePreviewHTML(n)}
+  `;
+
+  // image lightbox
+  card.querySelectorAll('img[data-preview]')?.forEach(img=>{
+    img.addEventListener('click',()=>openLightbox(img.src));
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  const bEdit = document.createElement('button'); bEdit.className='btn'; bEdit.textContent='수정';
+  const bDel  = document.createElement('button'); bDel.className='btn danger'; bDel.textContent='삭제';
+  actions.appendChild(bEdit); actions.appendChild(bDel); card.appendChild(actions);
+
+  bEdit.addEventListener('click', ()=> openEditorForEdit(category, n));
+  bDel.addEventListener('click', ()=> handleDelete(category, n));
+
+  return card;
+}
+
+function makeAssessmentCard(n){
+  const el = makeCard(n,'assessment');
+  // session quick view (default vs class override)
+  const wrap = document.createElement('div');
+  wrap.className='help';
+  const list = (n.defaultSessions||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(x=>`${x.order}차시: ${x.text}`).join(' \u00B7 ');
+  wrap.textContent = list ? `기본 차시: ${list}` : '기본 차시 없음';
+  el.appendChild(wrap);
+
+  // open per-class session editor
+  const btn = document.createElement('button');
+  btn.className = 'btn ghost';
+  btn.textContent = '반별 차시 편집';
+  btn.style.marginTop = '8px';
+  btn.addEventListener('click', ()=> openSessionPanel(n));
+  el.appendChild(btn);
+  return el;
+}
+
+// =============== 라이트박스 ===============
+function openLightbox(src){
+  const lb = $('#lightbox');
+  lb.querySelector('img').src = src;
+  lb.classList.add('show');
+}
+$('#lightbox .btn').addEventListener('click', ()=> $('#lightbox').classList.remove('show'));
+$('#lightbox').addEventListener('click', (e)=>{ if(e.target.id==='lightbox') $('#lightbox').classList.remove('show'); });
+
+// =============== 편집기 ===============
+function resetEditor(){
+  $('#f-category').value='event';
+  $('#f-date').value='';
+  $('#f-title').value='';
+  $('#f-desc').value='';
+  $('#f-file').value='';
+  $('#file-preview').innerHTML='';
+  $('#session-list').innerHTML='';
+  $('#session-editor').classList.add('hidden');
+}
+
+function openEditorForCreate(){
+  editContext = {mode:'create', category:'event', col:null, id:null};
+  $('#editor-title').textContent='새 글 작성';
+  resetEditor();
+  $('#class-select').classList.add('hidden');
+  $('#main').classList.add('hidden');
+  $('#editor').classList.remove('hidden');
+}
+
+function openEditorForEdit(category, n){
+  editContext = {mode:'edit', category, id:n.id};
+  $('#editor-title').textContent='글 수정';
+  resetEditor();
+  $('#f-category').value = category==='class' ? 'class' : category; // lock by change
+  $('#f-category').disabled = true;
+  $('#f-date').value = n.date || '';
+  $('#f-title').value = n.title || '';
+  $('#f-desc').value = n.description || '';
+  if(n.fileData){
+    $('#file-preview').innerHTML = filePreviewHTML(n);
+    $('#file-preview img')?.addEventListener('click',()=>openLightbox(n.fileData));
+  }
+  if(category==='assessment'){
+    $('#session-editor').classList.remove('hidden');
+    (n.defaultSessions||[]).forEach(x=> addSessionRow(x.order, x.text));
+  }
+  $('#class-select').classList.add('hidden');
+  $('#main').classList.add('hidden');
+  $('#editor').classList.remove('hidden');
+}
+
+function addSessionRow(order='', text=''){
+  const row = document.createElement('div');
+  row.className='session-item';
+  row.innerHTML = `<input type="number" class="s-order" placeholder="차시(숫자)" value="${order}"> <input type="text" class="s-text" placeholder="예) 보고서 안내" value="${text}"> <button class="btn danger" type="button">삭제</button>`;
+  row.querySelector('button').addEventListener('click', ()=> row.remove());
+  $('#session-list').appendChild(row);
+}
+$('#btn-add-session').addEventListener('click', ()=> addSessionRow());
+
+$('#f-category').addEventListener('change', (e)=>{
+  const v = e.target.value;
+  if(v==='assessment') $('#session-editor').classList.remove('hidden');
+  else $('#session-editor').classList.add('hidden');
+});
+
+// 파일 미리보기
+$('#f-file').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) { $('#file-preview').innerHTML=''; return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    if(file.type.startsWith('image/')){
+      $('#file-preview').innerHTML = `<div class="file-preview"><img data-preview="1" src="${dataUrl}" alt="미리보기"></div>`;
+      $('#file-preview img').addEventListener('click',()=>openLightbox(dataUrl));
+    } else {
+      $('#file-preview').innerHTML = `<a class="file-link" href="${dataUrl}" download="${file.name}">📎 ${file.name}</a>`;
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+// 저장 로직
+async function saveEditor(){
+  const cat = $('#f-category').value; // event | assessment | class
+  const date = $('#f-date').value?.trim();
+  const title = $('#f-title').value?.trim();
+  const description = $('#f-desc').value?.trim();
+  const file = $('#f-file').files[0];
+  if(!cat || !date || !title || !description) return alert('모든 항목을 입력하세요.');
+
+  // 권한 체크
+  if(cat==='event'){
+    // 행사: 마스터 비번 필요
+    if(!await requireMaster()) return;
+  } else if(cat==='assessment'){
+    // 수행평가 본문: 마스터 비번 필요 (세부 차시는 반별 편집 화면에서)
+    if(!await requireMaster()) return;
+  } else if(cat==='class'){
+    // 반별 공지: 현재 반 + 해당 반 비번 또는 마스터
+    if(!currentClass) return alert('먼저 반을 선택하세요.');
+    const ok = await requireClassOrMaster(currentClass);
+    if(!ok) return;
+  }
+
+  const base = { date, title, description, updatedAt: serverTimestamp() };
   if(file){
-    const r=new FileReader();
-    imageData=await new Promise(res=>{r.onload=e=>res(e.target.result);r.readAsDataURL(file);});
+    base.fileName = file.name; base.fileType = file.type;
+    base.fileData = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(file); });
   }
-  const base={title,description:desc,date,image:imageData,className:currentClass,createdAt:serverTimestamp()};
-  if(category==='event') await addDoc(collection(db,'events'),base);
-  if(category==='assessment') await addDoc(collection(db,'assessments'),base);
-  if(category==='class') await addDoc(collection(db,'classNotices'),base);
+
+  if(editContext?.mode==='edit'){
+    // update existing
+    if(cat==='event') await updateDoc(doc(db,'events', editContext.id), base);
+    if(cat==='assessment'){
+      // include defaultSessions from editor
+      const sessions = collectSessionEditor();
+      await updateDoc(doc(db,'assessments', editContext.id), {...base, defaultSessions: sessions});
+    }
+    if(cat==='class') await updateDoc(doc(db,'classNotices', editContext.id), {...base, className: currentClass});
+  } else {
+    // create new
+    if(cat==='event') await addDoc(collection(db,'events'), {...base, createdAt: serverTimestamp()});
+    if(cat==='assessment'){
+      const sessions = collectSessionEditor();
+      await addDoc(collection(db,'assessments'), {...base, createdAt: serverTimestamp(), defaultSessions: sessions});
+    }
+    if(cat==='class') await addDoc(collection(db,'classNotices'), {...base, className: currentClass, createdAt: serverTimestamp()});
+  }
+
+  await reloadAndReturn();
+}
+
+function collectSessionEditor(){
+  const rows = [...$$('#session-list .session-item')];
+  const items = rows.map(r=>({ order: Number(r.querySelector('.s-order').value||0), text: r.querySelector('.s-text').value.trim() }))
+                    .filter(x=>x.text);
+  // unique & sort
+  const seen = new Set();
+  const dedup = items.filter(x=>{ const k = x.order+':'+x.text; if(seen.has(k)) return false; seen.add(k); return true; })
+                     .sort((a,b)=>(a.order||0)-(b.order||0));
+  return dedup;
+}
+
+async function reloadAndReturn(){
+  await Promise.all([loadEvents(), loadAssessments(), loadClassNotices()]);
+  renderAll();
+  $('#editor').classList.add('hidden');
+  $('#main').classList.remove('hidden');
+}
+
+// 삭제
+async function handleDelete(category, n){
+  if(category==='event' || category==='assessment'){
+    if(!await requireMaster()) return; // 마스터만 삭제
+  } else if(category==='class'){
+    const ok = await requireClassOrMaster(n.className);
+    if(!ok) return;
+  }
+  if(!confirm('정말 삭제하시겠습니까?')) return;
+  if(category==='event') await deleteDoc(doc(db,'events', n.id));
+  if(category==='assessment') await deleteDoc(doc(db,'assessments', n.id));
+  if(category==='class') await deleteDoc(doc(db,'classNotices', n.id));
+  await loadAll();
+}
+
+// ====== 수행평가 차시 (반별 편집) ======
+function openSessionPanel(assessment){
+  if(!currentClass) return alert('먼저 반을 선택하세요.');
+  $('#sp-assessment-title').textContent = assessment.title;
+  $('#session-panel').dataset.assessmentId = assessment.id;
+  $('#session-panel').classList.remove('hidden');
+  $('#main').classList.add('hidden');
+  loadClassSessionsIntoPanel(assessment);
+}
+
+async function loadClassSessionsIntoPanel(assessment){
+  // load per-class override; if none, use defaultSessions
+  const ref = doc(db,'assessments', assessment.id, 'sessions', currentClass);
+  const sdoc = await getDoc(ref);
+  const items = sdoc.exists() ? (sdoc.data().items||[]) : (assessment.defaultSessions||[]);
+  const box = $('#class-session-list');
+  box.innerHTML='';
+  items.slice().sort((a,b)=>(a.order||0)-(b.order||0)).forEach(x=>{
+    const row = document.createElement('div');
+    row.className='session-item';
+    row.innerHTML = `<input type="number" class="s-order" value="${x.order||''}" placeholder="차시"> <input type="text" class="s-text" value="${x.text||''}" placeholder="내용"> <button class="btn danger" type="button">삭제</button>`;
+    row.querySelector('button').addEventListener('click',()=> row.remove());
+    box.appendChild(row);
+  });
+}
+
+$('#sp-add').addEventListener('click', ()=>{
+  const row = document.createElement('div');
+  row.className='session-item';
+  row.innerHTML = `<input type="number" class="s-order" placeholder="차시"> <input type="text" class="s-text" placeholder="내용"> <button class="btn danger" type="button">삭제</button>`;
+  row.querySelector('button').addEventListener('click',()=> row.remove());
+  $('#class-session-list').appendChild(row);
+});
+
+$('#sp-save').addEventListener('click', async ()=>{
+  // only class password (마스터로는 불가)
+  if(!currentClass) return alert('반 선택 필요');
+  const ok = await requireClassPasswordOnly(currentClass);
+  if(!ok) return;
+  const items = [...$$('#class-session-list .session-item')]
+    .map(r=>({order:Number(r.querySelector('.s-order').value||0), text:r.querySelector('.s-text').value.trim()}))
+    .filter(x=>x.text)
+    .sort((a,b)=>(a.order||0)-(b.order||0));
+  const aid = $('#session-panel').dataset.assessmentId;
+  await setDoc(doc(db,'assessments', aid, 'sessions', currentClass), { items, updatedAt: serverTimestamp() });
   alert('저장됨');
-  location.reload();
-};
+  $('#session-panel').classList.add('hidden');
+  $('#main').classList.remove('hidden');
+});
+$('#sp-cancel').addEventListener('click', ()=>{ $('#session-panel').classList.add('hidden'); $('#main').classList.remove('hidden'); });
+
+// =============== 권한 체크 ===============
+async function requireMaster(){
+  if(!masterHash){ alert('마스터 비밀번호가 설정되지 않았습니다.'); return false; }
+  const p = prompt('마스터 비밀번호를 입력하세요');
+  if(p===null) return false;
+  const ok = await verifyPassword(p, masterHash);
+  if(!ok) alert('비밀번호가 틀렸습니다.');
+  return ok;
+}
+async function requireClassPasswordOnly(className){
+  const c = classes[className];
+  if(!c || !c.passwordHash){ alert('해당 반의 비밀번호가 설정되지 않았습니다.'); return false; }
+  const p = prompt(`${className} 비밀번호를 입력하세요`);
+  if(p===null) return false;
+  const ok = await verifyPassword(p, c.passwordHash);
+  if(!ok) alert('비밀번호가 틀렸습니다.');
+  return ok;
+}
+async function requireClassOrMaster(className){
+  const p = prompt(`${className} 비밀번호 또는 마스터 비밀번호를 입력하세요`);
+  if(p===null) return false;
+  const h = await sha256Hex(p);
+  const ok = (classes[className]?.passwordHash && h===classes[className].passwordHash) || (masterHash && h===masterHash);
+  if(!ok) alert('비밀번호가 틀렸습니다.');
+  return ok;
+}
+
+// =============== 반 선택 ===============
+function selectClass(){
+  const v = $('#class-select-input').value;
+  if(!/^1학년[1-9]반$/.test(v)) return alert('반을 선택하세요');
+  currentClass = v;
+  $('#class-select').classList.add('hidden');
+  $('#main').classList.remove('hidden');
+  renderAll();
+}
+function backToClass(){
+  currentClass = null;
+  $('#main').classList.add('hidden');
+  $('#class-select').classList.remove('hidden');
+}
+
+// =============== 이벤트 바인딩 ===============
+$('#class-confirm-btn').addEventListener('click', selectClass);
+$('#nav-back').addEventListener('click', backToClass);
+$('#btn-add').addEventListener('click', openEditorForCreate);
+$('#btn-cancel').addEventListener('click', ()=>{ $('#editor').classList.add('hidden'); $('#main').classList.remove('hidden'); });
+$('#btn-save').addEventListener('click', saveEditor);
+
+// 최초 로드
+await loadAll();
 </script>
 </body>
 </html>
