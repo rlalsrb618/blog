@@ -500,59 +500,66 @@ function openSessionPanel(assessment){
   loadClassSessionsIntoPanel(assessment);
 }
 
-// ✅ 수정됨: 반별 차시 불러오기 (날짜/교시 전용)
+// ✅ 수정됨: 반별 차시 불러오기
 async function loadClassSessionsIntoPanel(assessment){
   const ref = doc(db,'assessments', assessment.id, 'sessions', currentClass);
   const sdoc = await getDoc(ref);
-  const items = sdoc.exists() ? (sdoc.data().items||[]) : [];
+  const existing = sdoc.exists() ? (sdoc.data().items||[]) : [];
+  const existingMap = {};
+  existing.forEach(x => existingMap[x.order] = x.date || "");
+
+  // 공통 차시 목록
+  const defaults = (assessment.defaultSessions || []).slice().sort((a,b)=>(a.order||0)-(b.order||0));
   const box = $('#class-session-list');
-  box.innerHTML='';
-  items.forEach(x=>{
+  box.innerHTML = '';
+
+  if (defaults.length === 0) {
+    box.innerHTML = '<div class="help">공통 차시 정보가 없습니다.</div>';
+    return;
+  }
+
+  defaults.forEach(x => {
     const row = document.createElement('div');
-    row.className='session-item';
+    row.className = 'session-item';
     row.innerHTML = `
-      <input type="date" class="s-date" value="${x.date||''}">
-      <input type="text" class="s-period" value="${x.period||''}" placeholder="예: 3교시">
-      <button class="btn danger" type="button">삭제</button>`;
-    row.querySelector('button').addEventListener('click',()=> row.remove());
+      <div style="flex:1;">
+        <b>${x.order}차시</b> : ${x.text}
+      </div>
+      <input type="date" class="s-date" value="${existingMap[x.order] || ''}">
+    `;
     box.appendChild(row);
   });
 }
 
-// ✅ 수정됨: 새 행 추가 (날짜/교시)
-$('#sp-add').addEventListener('click', ()=>{
-  const row = document.createElement('div');
-  row.className='session-item';
-  row.innerHTML = `
-    <input type="date" class="s-date">
-    <input type="text" class="s-period" placeholder="예: 4교시">
-    <button class="btn danger" type="button">삭제</button>`;
-  row.querySelector('button').addEventListener('click',()=> row.remove());
-  $('#class-session-list').appendChild(row);
-});
-
-// ✅ 수정됨: 저장 시 날짜/교시만 저장
+// ✅ 수정됨: 저장 시 반별 날짜 저장
 $('#sp-save').addEventListener('click', async ()=>{
   if(!currentClass) return alert('반 선택 필요');
   const ok = await requireClassPasswordOnly(currentClass);
   if(!ok) return;
 
-  const items = [...$$('#class-session-list .session-item')]
-    .map(r=>({
-      date: r.querySelector('.s-date').value.trim(),
-      period: r.querySelector('.s-period').value.trim()
-    }))
-    .filter(x=>x.date && x.period);
-
   const aid = $('#session-panel').dataset.assessmentId;
+  const aDoc = assessments.find(a => a.id === aid);
+  if(!aDoc) return alert('수행평가 정보를 불러오지 못했습니다.');
+
+  const defaults = (aDoc.defaultSessions || []).slice().sort((a,b)=>(a.order||0)-(b.order||0));
+  const rows = [...$$('#class-session-list .session-item .s-date')];
+
+  const items = defaults.map((x, i) => ({
+    order: x.order,
+    text: x.text,
+    date: rows[i]?.value?.trim() || ""
+  })).filter(x => x.date);
+
   await setDoc(doc(db,'assessments', aid, 'sessions', currentClass), {
     items,
     updatedAt: serverTimestamp()
   });
+
   alert('저장되었습니다.');
   $('#session-panel').classList.add('hidden');
   $('#main').classList.remove('hidden');
 });
+
 $('#sp-cancel').addEventListener('click', ()=>{
   $('#session-panel').classList.add('hidden');
   $('#main').classList.remove('hidden');
