@@ -338,6 +338,15 @@ function makeAssessmentCard(n){
   loadPerClassDates();
 
   el.appendChild(wrap);
+
+  // 반별 차시 편집 버튼
+  const btn = document.createElement('button');
+  btn.className = 'btn ghost';
+  btn.textContent = '반별 차시 편집';
+  btn.style.marginTop = '8px';
+  btn.addEventListener('click', ()=> openSessionPanel(n));
+  el.appendChild(btn);
+
   return el;
 }
 
