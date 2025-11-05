@@ -1,46 +1,52 @@
 import React, { useEffect, useState } from "react";
 
-// Waterboom 간단 버전 — 하루 물 사용량 기록만 가능
-// 기능:
-// - 하루 물 사용량 입력 및 저장 (로컬스토리지)
-// - 오늘 기록만 표시
-
 export default function WaterboomApp() {
-  const STORAGE_KEY = "waterboom_today";
-  const today = new Date().toISOString().slice(0, 10);
-  const [liters, setLiters] = useState("");
+  const STORAGE_KEY = "waterboom_entries_simple";
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [liters, setLiters] = useState(0);
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const data = JSON.parse(saved);
-      if (data.date === today) setLiters(data.liters);
-    }
-  }, []);
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const existing = saved.find((e) => e.date === date);
+    if (existing) setLiters(existing.liters);
+  }, [date]);
 
   function saveUsage() {
-    if (!liters || liters < 0) {
-      alert("올바른 물 사용량을 입력하세요.");
-      return;
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ date: today, liters }));
-    alert("오늘의 물 사용량이 저장되었습니다!");
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const filtered = saved.filter((e) => e.date !== date);
+    filtered.push({ date, liters });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    alert(`${date}의 물 사용량이 저장되었습니다!`);
   }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-blue-50">
       <div className="bg-white p-6 rounded-2xl shadow-md w-80 text-center">
         <h1 className="text-2xl font-bold mb-4">💧 Waterboom</h1>
-        <p className="text-gray-600 mb-4">오늘({today}) 사용한 물의 양을 기록하세요.</p>
+        <p className="text-gray-600 mb-4">오늘 사용한 물의 양을 기록하세요.</p>
 
         <input
-          type="number"
-          min="0"
+          type="date"
           className="w-full p-2 border rounded mb-3"
-          placeholder="사용한 물 (리터)"
-          value={liters}
-          onChange={(e) => setLiters(e.target.value)}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
         />
+
+        <div className="flex justify-center items-center gap-3 mb-4">
+          <button
+            className="bg-gray-200 px-3 py-2 rounded-lg text-lg"
+            onClick={() => setLiters((prev) => Math.max(0, prev - 10))}
+          >
+            -10
+          </button>
+          <span className="text-xl font-semibold">{liters} L</span>
+          <button
+            className="bg-blue-200 px-3 py-2 rounded-lg text-lg"
+            onClick={() => setLiters((prev) => prev + 10)}
+          >
+            +10
+          </button>
+        </div>
 
         <button
           onClick={saveUsage}
@@ -48,12 +54,6 @@ export default function WaterboomApp() {
         >
           저장하기
         </button>
-
-        {liters && (
-          <p className="mt-4 text-gray-700">
-            오늘 사용한 물: <span className="font-semibold">{liters} L</span>
-          </p>
-        )}
       </div>
     </div>
   );
