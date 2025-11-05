@@ -1,7 +1,4 @@
 
-
-# HTML 템플릿
-HTML = """
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -29,16 +26,11 @@ th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: center; }
   <button type="submit">저장</button>
 </form>
 
-{% if data %}
   <h2>기록 목록</h2>
   <table>
     <tr><th>날짜</th><th>사용량 (L)</th></tr>
-    {% for d, a in data %}
     <tr><td>{{ d }}</td><td>{{ a }}</td></tr>
-    {% endfor %}
   </table>
-{% endif %}
 
 </body>
 </html>
-"""
