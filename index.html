@@ -1,93 +1,83 @@
-import React, { useState, useEffect } from "react";
+from flask import Flask, render_template_string, request, redirect
+import sqlite3
+import os
+from datetime import date
 
-export default function WaterboomApp() {
-  const STORAGE_KEY = "waterboom_simple";
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [liters, setLiters] = useState("");
+app = Flask(__name__)
+DB_FILE = "water_usage.db"
 
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    const existing = saved.find((e) => e.date === date);
-    if (existing) setLiters(existing.liters);
-  }, [date]);
+# DB 초기화
+def init_db():
+    if not os.path.exists(DB_FILE):
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute('''CREATE TABLE usage(
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        day TEXT,
+                        amount REAL
+                    )''')
+        conn.commit()
+        conn.close()
 
-  const saveUsage = () => {
-    if (!liters || liters < 0) return;
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    const filtered = saved.filter((e) => e.date !== date);
-    filtered.push({ date, liters });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-    alert("저장되었습니다.");
-  };
+init_db()
 
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "#E0F2FE",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <div
-        style={{
-          background: "white",
-          padding: "30px",
-          borderRadius: "20px",
-          boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-          width: "300px",
-          textAlign: "center",
-        }}
-      >
-        <h2 style={{ fontSize: "20px", marginBottom: "20px" }}>💧 물 사용량 기록</h2>
+HTML = """
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>1일 물 사용량 기록</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+h1 { color: #0077cc; }
+form, table { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+input[type=date], input[type=number] { padding: 5px; margin: 5px; }
+button { background: #0077cc; color: white; border: none; padding: 7px 12px; border-radius: 5px; cursor: pointer; }
+button:hover { background: #005fa3; }
+table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: center; }
+</style>
+</head>
+<body>
+<h1>1일 물 사용량 기록</h1>
 
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "8px",
-            marginBottom: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-          }}
-        />
+<form method="POST">
+  <label>날짜:</label>
+  <input type="date" name="day" value="{{today}}" required>
+  <label>사용량(리터):</label>
+  <input type="number" name="amount" step="0.1" min="0" required>
+  <button type="submit">저장</button>
+</form>
 
-        <input
-          type="number"
-          min="0"
-          value={liters}
-          onChange={(e) => setLiters(e.target.value)}
-          placeholder="물 사용량 (L)"
-          style={{
-            width: "100%",
-            padding: "8px",
-            marginBottom: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-          }}
-        />
+<h2>기록 목록</h2>
+<table>
+<tr><th>날짜</th><th>사용량 (L)</th></tr>
+{% for d, a in data %}
+<tr><td>{{d}}</td><td>{{a}}</td></tr>
+{% endfor %}
+</table>
 
-        <button
-          onClick={saveUsage}
-          style={{
-            width: "100%",
-            padding: "10px",
-            background: "#38BDF8",
-            color: "white",
-            border: "none",
-            borderRadius: "10px",
-            fontSize: "16px",
-            cursor: "pointer",
-          }}
-        >
-          저장
-        </button>
-      </div>
-    </div>
-  );
-}
+</body>
+</html>
+"""
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+
+    if request.method == "POST":
+        day = request.form["day"]
+        amount = request.form["amount"]
+        c.execute("INSERT INTO usage (day, amount) VALUES (?, ?)", (day, amount))
+        conn.commit()
+        return redirect("/")
+
+    c.execute("SELECT day, amount FROM usage ORDER BY day DESC")
+    data = c.fetchall()
+    conn.close()
+
+    return render_template_string(HTML, data=data, today=date.today().isoformat())
+
+if __name__ == "__main__":
+    app.run(debug=True)
