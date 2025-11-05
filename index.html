@@ -1,653 +1,359 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>중원고 공지 알리미 (개편)</title>
-<style>
-  :root{
-    --primary:#1c3c78; --bg:#f5f8fc; --danger:#c0392b; --muted:#777;
-  }
-  body{font-family:'Segoe UI',system-ui,-apple-system,Apple SD Gothic Neo,Malgun Gothic,sans-serif;background:var(--bg);margin:0;color:#333}
-  header{background:var(--primary);color:#fff;text-align:center;padding:24px 12px}
-  .container{max-width:980px;margin:0 auto;padding:20px}
-  h2{margin:24px 0 12px;border-bottom:2px solid var(--primary);padding-bottom:6px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:16px 18px;margin:12px 0;position:relative}
-  .date{font-weight:600;color:var(--primary)}
-  .title{font-size:18px;margin:6px 0}
-  .description{white-space:pre-wrap;color:#555}
-  .btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:8px;padding:9px 14px;background:var(--primary);color:#fff;cursor:pointer;font-weight:600}
-  .btn.muted{background:#888}
-  .btn.danger{background:var(--danger)}
-  .btn.ghost{background:#e9eef8;color:#1c3c78}
-  .btn + .btn{margin-left:8px}
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px}
-  select, input[type="text"], input[type="date"], textarea{width:100%;box-sizing:border-box;border:1px solid #d6dbe6;border-radius:8px;padding:10px 12px;font:inherit}
-  textarea{min-height:120px}
-  .hidden{display:none}
-  .file-preview{margin-top:10px}
-  .file-preview img{max-width:220px;border-radius:8px;margin-top:6px;cursor:pointer}
-  .file-link{display:inline-block;margin-top:6px;color:var(--primary);text-decoration:underline}
-  .grid{display:grid;gap:16px}
-  @media (min-width:840px){.grid.two{grid-template-columns:1fr 1fr}}
-  .badge{display:inline-block;padding:2px 10px;border-radius:999px;background:#eef2ff;color:#1c3c78;font-size:12px;font-weight:700}
-  .actions{position:absolute;top:12px;right:12px}
-  .actions .btn{padding:6px 10px;font-size:12px}
-  .section-head{display:flex;align-items:center;justify-content:space-between}
-  /* Lightbox */
-  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
-  .lightbox img{max-width:95vw;max-height:90vh;border-radius:10px}
-  .lightbox.show{display:flex}
-  .lightbox .btn{position:absolute;top:18px;right:18px}
-  /* Session editor */
-  .session-item{display:flex;gap:8px;margin-top:8px}
-  .session-item input{flex:1}
-  .help{color:var(--muted);font-size:12px;margin-top:6px}
-  .stack-sm{display:grid;gap:10px}
-</style>
-</head>
-<body>
-  <header>
-    <h1>중원고 행사·수행평가·반별공지 알리미</h1>
-    <p>오늘의 공지사항을 빠르게 확인하세요</p>
-  </header>
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
-  <!-- 반 선택 -->
-  <section id="class-select" class="container">
-    <h2>자신의 반을 선택하세요</h2>
-    <div class="grid two">
-      <div>
-        <label for="class-select-input" class="help">1학년 1~9반</label>
-        <select id="class-select-input">
-          <option value="" selected disabled>반 선택</option>
-          <option>1학년1반</option>
-          <option>1학년2반</option>
-          <option>1학년3반</option>
-          <option>1학년4반</option>
-          <option>1학년5반</option>
-          <option>1학년6반</option>
-          <option>1학년7반</option>
-          <option>1학년8반</option>
-          <option>1학년9반</option>
-        </select>
-      </div>
-      <div class="stack-sm">
-        <button id="class-confirm-btn" class="btn">확인</button>
-        <div id="debug" class="help">상태: 대기중</div>
-      </div>
-    </div>
-  </section>
+// WaterboomApp.jsx
+// Single-file React component for a simple water-usage tracker
+// - Uses Tailwind CSS for styling
+// - Persists data to localStorage (key: "waterboom_entries")
+// - Lets user add a daily entry (date + liters), view past entries, choose a date range
+// - Displays a line chart of water usage
+// How to use:
+// 1) Create a React app (Vite or CRA). Install `recharts` and TailwindCSS.
+//    npm install recharts
+// 2) Make sure Tailwind is configured in your project.
+// 3) Import and render <WaterboomApp /> in your App.js or main component.
 
-  <!-- 메인 -->
-  <section id="main" class="container hidden">
-    <div class="toolbar">
-      <button id="nav-back" class="btn muted">← 반 다시 선택</button>
-      <button id="btn-add" class="btn">+ 글 추가</button>
-    </div>
+const STORAGE_KEY = "waterboom_entries";
 
-    <div class="grid two">
-      <div>
-        <div class="section-head">
-          <h2>📅 행사 (전체공통)</h2>
-          <span class="badge">행사</span>
-        </div>
-        <div id="list-events"></div>
-      </div>
-      <div>
-        <div class="section-head">
-          <h2 id="assess-title">📝 수행평가</h2>
-          <span class="badge">수행평가</span>
-        </div>
-        <div id="list-assessments"></div>
-      </div>
-    </div>
-
-    <h2 id="class-title">📣 반별 공지</h2>
-    <div id="list-class"></div>
-  </section>
-
-  <!-- 작성/수정 폼 -->
-  <section id="editor" class="container hidden">
-    <h2 id="editor-title">새 글</h2>
-    <div class="grid two">
-      <div class="stack-sm">
-        <label>카테고리</label>
-        <select id="f-category">
-          <option value="event">행사 (전체공통)</option>
-          <option value="assessment">수행평가 (내용 공통)</option>
-          <option value="class">반별 공지</option>
-        </select>
-      </div>
-      <div class="stack-sm">
-        <label>날짜</label>
-        <input id="f-date" type="date" />
-      </div>
-    </div>
-
-    <div class="grid two">
-      <div class="stack-sm"><label>제목</label><input id="f-title" type="text" placeholder="제목" /></div>
-      <div class="stack-sm"><label>첨부파일 (이미지/PDF)</label><input id="f-file" type="file" accept="image/*,.pdf" /></div>
-    </div>
-
-    <div class="stack-sm" style="margin-top:12px">
-      <label>내용</label>
-      <textarea id="f-desc" placeholder="내용" ></textarea>
-      <div id="file-preview" class="file-preview"></div>
-    </div>
-
-    <!-- 수행평가 초기 차시 입력 (옵션) -->
-    <div id="session-editor" class="hidden" style="margin-top:18px">
-      <div class="section-head"><h3>차시 정보 (+/-로 추가)</h3><span class="help">예시: 1차시 : 보고서 안내</span></div>
-      <div id="session-list"></div>
-      <div class="toolbar">
-        <button id="btn-add-session" class="btn ghost">+ 차시 추가</button>
-      </div>
-    </div>
-
-    <div class="toolbar">
-      <button id="btn-save" class="btn">저장</button>
-      <button id="btn-cancel" class="btn muted">취소</button>
-    </div>
-  </section>
-
-  <!-- 차시(수행평가) per-class 편집 패널 -->
-  <section id="session-panel" class="container hidden">
-    <div class="section-head"><h2>차시 편집 (반별 비밀번호 필요)</h2><span class="badge" id="sp-assessment-title">-</span></div>
-    <div id="class-session-list"></div>
-    <div class="toolbar">
-      <button id="sp-add" class="btn ghost">+ 차시 추가</button>
-      <button id="sp-save" class="btn">저장</button>
-      <button id="sp-cancel" class="btn muted">닫기</button>
-    </div>
-  </section>
-
-  <!-- 이미지 라이트박스 -->
-  <div id="lightbox" class="lightbox"><button class="btn">닫기</button><img alt="preview" /></div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, collection, doc, getDocs, getDoc, addDoc, setDoc, updateDoc, deleteDoc, serverTimestamp, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-// ================= Firebase 설정 =================
-const firebaseConfig = {
-  apiKey: "AIzaSyAxyzwEpyLDxBjS9Wn2wjgzrphx4surn5g",
-  authDomain: "jungwonjd2.firebaseapp.com",
-  databaseURL: "https://jungwonjd2-default-rtdb.firebaseio.com",
-  projectId: "jungwonjd2",
-  storageBucket: "jungwonjd2.firebasestorage.app",
-  messagingSenderId: "197915083889",
-  appId: "1:197915083889:web:5c85a163afcf7311eb07d0"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// ================= 전역 상태 =================
-let currentClass = null;
-let editContext = null; // {mode:'create'|'edit', category, col, id}
-let classes = {};       // {"1학년1반": {passwordHash:"..."}, ...}
-let masterHash = null;  // settings/master.passwordHash
-
-const $ = sel => document.querySelector(sel);
-const $$ = sel => document.querySelectorAll(sel);
-const setDebug = t => ($('#debug')||{}).innerText = t;
-
-// crypto utils (SHA-256 to hex)
-async function sha256Hex(str){
-  const enc = new TextEncoder();
-  const buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
-  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-async function verifyPassword(input, hash){
-  const h = await sha256Hex(input);
-  return h === hash;
+function formatDateISO(date) {
+  const d = new Date(date);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-// =============== 데이터 로드 ===============
-async function loadSecurity(){
-  // load master
-  const sDoc = await getDoc(doc(db,'settings','master'));
-  masterHash = sDoc.exists()? (sDoc.data().passwordHash||null) : null;
-  // load classes
-  const cSnap = await getDocs(collection(db,'classes'));
-  classes = {};
-  cSnap.forEach(d=>{ classes[d.id] = { ...(d.data()) }; });
+function parseISO(iso) {
+  // returns Date
+  return new Date(iso + "T00:00:00");
 }
 
-async function loadAll(){
-  await Promise.all([loadSecurity(), loadEvents(), loadAssessments(), loadClassNotices()]);
-  renderAll();
-  setDebug('데이터 불러오기 완료');
-}
-
-// Collections:
-// events (전체공통)
-// assessments (공통 본문) {date,title,description,defaultSessions:[{order,text}], file{ name,type,data }}
-//   assessments/{id}/sessions/{className} { items:[{order,text}] }
-// classNotices (반별) {className, date,title,description, file}
-
-let events = [];
-let assessments = []; // {id, ...}
-let classNotices = {}; // {className: [notice,...]}
-
-async function loadEvents(){
-  events = [];
-  const snap = await getDocs(collection(db,'events'));
-  snap.forEach(d=>events.push({id:d.id, ...d.data()}));
-}
-async function loadAssessments(){
-  assessments = [];
-  const snap = await getDocs(collection(db,'assessments'));
-  snap.forEach(d=>assessments.push({id:d.id, ...d.data()}));
-}
-async function loadClassNotices(){
-  classNotices = {};
-  const snap = await getDocs(collection(db,'classNotices'));
-  snap.forEach(d=>{
-    const c = d.data().className || 'unknown';
-    (classNotices[c] ||= []).push({id:d.id, ...d.data()});
+export default function WaterboomApp() {
+  const [entries, setEntries] = useState([]); // {date: 'YYYY-MM-DD', liters: number}
+  const [dateInput, setDateInput] = useState(() => formatDateISO(new Date()));
+  const [litersInput, setLitersInput] = useState(0);
+  const [rangeStart, setRangeStart] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 29);
+    return formatDateISO(d);
   });
-}
+  const [rangeEnd, setRangeEnd] = useState(() => formatDateISO(new Date()));
 
-// =============== UI 렌더 ===============
-function renderAll(){
-  // header labels
-  if(currentClass){
-    $('#assess-title').textContent = `📝 수행평가 (현재: ${currentClass})`;
-    $('#class-title').textContent = `📣 ${currentClass} 반별 공지`;
-  }
-  // events
-  const evBox = $('#list-events'); evBox.innerHTML = '';
-  events.slice().sort((a,b)=> (a.date||'').localeCompare(b.date)).reverse().forEach(n=>evBox.appendChild(makeCard(n,'event')));
-  // assessments
-  const asBox = $('#list-assessments'); asBox.innerHTML = '';
-  assessments.slice().sort((a,b)=> (a.date||'').localeCompare(b.date)).reverse().forEach(n=>asBox.appendChild(makeAssessmentCard(n)));
-  // class notices
-  const clBox = $('#list-class'); clBox.innerHTML = '';
-  const arr = currentClass ? (classNotices[currentClass]||[]) : [];
-  arr.slice().sort((a,b)=> (a.date||'').localeCompare(b.date)).reverse().forEach(n=>clBox.appendChild(makeCard(n,'class')));
-}
-
-function filePreviewHTML(n){
-  if(!n || !n.fileData) return '';
-  if((n.fileType||'').startsWith('image/')){
-    return `<div class="file-preview"><img data-preview="1" src="${n.fileData}" alt="${n.fileName||'이미지'}" /></div>`;
-  }
-  return `<a class="file-link" href="${n.fileData}" download="${n.fileName||'file'}">📎 ${n.fileName||'첨부파일'}</a>`;
-}
-
-function makeCard(n, category){
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.innerHTML = `
-    <div class="date">${n.date||''}</div>
-    <div class="title">${n.title||''}</div>
-    <div class="description">${n.description||''}</div>
-    ${filePreviewHTML(n)}
-  `;
-
-  // image lightbox
-  card.querySelectorAll('img[data-preview]')?.forEach(img=>{
-    img.addEventListener('click',()=>openLightbox(img.src));
-  });
-
-  const actions = document.createElement('div');
-  actions.className = 'actions';
-  const bEdit = document.createElement('button'); bEdit.className='btn'; bEdit.textContent='수정';
-  const bDel  = document.createElement('button'); bDel.className='btn danger'; bDel.textContent='삭제';
-  actions.appendChild(bEdit); actions.appendChild(bDel); card.appendChild(actions);
-
-  bEdit.addEventListener('click', ()=> openEditorForEdit(category, n));
-  bDel.addEventListener('click', ()=> handleDelete(category, n));
-
-  return card;
-}
-
-function makeAssessmentCard(n){
-  const el = makeCard(n,'assessment');
-
-  // session quick view (default vs class override)
-  const wrap = document.createElement('div');
-  wrap.className='help';
-  wrap.style.whiteSpace = 'pre-wrap'; // 줄바꿈 표시를 위해 추가
-
-  // 반별 차시 날짜 불러오기
-  async function loadPerClassDates(){
-    if(!currentClass){
-      wrap.textContent = '반을 선택하세요.';
-      return;
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setEntries(parsed);
+      } catch (e) {
+        console.error("Failed to parse stored entries", e);
+      }
     }
+  }, []);
 
-    const ref = doc(db,'assessments', n.id, 'sessions', currentClass);
-    const sdoc = await getDoc(ref);
-    const classDates = sdoc.exists() ? (sdoc.data().items || []) : [];
-    const dateMap = {};
-    classDates.forEach(x => { dateMap[x.order] = x.date || ''; });
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }, [entries]);
 
-    const lines = (n.defaultSessions || [])
-      .slice()
-      .sort((a,b)=>(a.order||0)-(b.order||0))
-      .map(x=>{
-        const date = dateMap[x.order] ? ` (${dateMap[x.order]})` : '';
-        return `${x.order}차시: ${x.text}${date}`;
-      });
-
-    wrap.textContent = lines.length ? `기본 차시:\n` + lines.join('\n') : '기본 차시 없음';
+  function upsertEntry(date, liters) {
+    setEntries((prev) => {
+      const filtered = prev.filter((e) => e.date !== date);
+      return [...filtered, { date, liters: Number(liters) }].sort((a, b) =>
+        a.date < b.date ? -1 : 1
+      );
+    });
   }
 
-  // 즉시 실행 (비동기)
-  loadPerClassDates();
-
-  const list = (n.defaultSessions||[]).slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(x=>`${x.order}차시: ${x.text}`).join(' \u00B7 ');
-  wrap.textContent = list ? `기본 차시: ${list}` : '기본 차시 없음';
-  el.appendChild(wrap);
-
-  // 반별 차시 편집 버튼
-  // open per-class session editor
-  const btn = document.createElement('button');
-  btn.className = 'btn ghost';
-  btn.textContent = '반별 차시 편집';
-  btn.style.marginTop = '8px';
-  btn.addEventListener('click', ()=> openSessionPanel(n));
-  el.appendChild(btn);
-
-  return el;
-}
-
-// =============== 라이트박스 ===============
-function openLightbox(src){
-  const lb = $('#lightbox');
-  lb.querySelector('img').src = src;
-  lb.classList.add('show');
-}
-$('#lightbox .btn').addEventListener('click', ()=> $('#lightbox').classList.remove('show'));
-$('#lightbox').addEventListener('click', (e)=>{ if(e.target.id==='lightbox') $('#lightbox').classList.remove('show'); });
-
-// =============== 편집기 ===============
-function resetEditor(){
-  $('#f-category').value='event';
-  $('#f-date').value='';
-  $('#f-title').value='';
-  $('#f-desc').value='';
-  $('#f-file').value='';
-  $('#file-preview').innerHTML='';
-  $('#session-list').innerHTML='';
-  $('#session-editor').classList.add('hidden');
-}
-
-function openEditorForCreate(){
-  editContext = {mode:'create', category:'event', col:null, id:null};
-  $('#editor-title').textContent='새 글 작성';
-  resetEditor();
-  $('#class-select').classList.add('hidden');
-  $('#main').classList.add('hidden');
-  $('#editor').classList.remove('hidden');
-}
-
-function openEditorForEdit(category, n){
-  editContext = {mode:'edit', category, id:n.id};
-  $('#editor-title').textContent='글 수정';
-  resetEditor();
-  $('#f-category').value = category==='class' ? 'class' : category; // lock by change
-  $('#f-category').disabled = true;
-  $('#f-date').value = n.date || '';
-  $('#f-title').value = n.title || '';
-  $('#f-desc').value = n.description || '';
-  if(n.fileData){
-    $('#file-preview').innerHTML = filePreviewHTML(n);
-    $('#file-preview img')?.addEventListener('click',()=>openLightbox(n.fileData));
+  function handleAddOrUpdate(e) {
+    e.preventDefault();
+    if (!dateInput) return;
+    const liters = Number(litersInput);
+    if (Number.isNaN(liters) || liters < 0) return alert("올바른 물 사용량을 입력하세요.");
+    upsertEntry(dateInput, liters);
   }
-  if(category==='assessment'){
-    $('#session-editor').classList.remove('hidden');
-    (n.defaultSessions||[]).forEach(x=> addSessionRow(x.order, x.text));
+
+  function handleDelete(date) {
+    if (!confirm(`${date}의 기록을 삭제하시겠어요?`)) return;
+    setEntries((prev) => prev.filter((e) => e.date !== date));
   }
-  $('#class-select').classList.add('hidden');
-  $('#main').classList.add('hidden');
-  $('#editor').classList.remove('hidden');
-}
 
-function addSessionRow(order='', text=''){
-  const row = document.createElement('div');
-  row.className='session-item';
-  row.innerHTML = `<input type="number" class="s-order" placeholder="차시(숫자)" value="${order}"> <input type="text" class="s-text" placeholder="예) 보고서 안내" value="${text}"> <button class="btn danger" type="button">삭제</button>`;
-  row.querySelector('button').addEventListener('click', ()=> row.remove());
-  $('#session-list').appendChild(row);
-}
-$('#btn-add-session').addEventListener('click', ()=> addSessionRow());
+  const entriesByDate = useMemo(() => {
+    const map = new Map();
+    for (const e of entries) map.set(e.date, e.liters);
+    return map;
+  }, [entries]);
 
-$('#f-category').addEventListener('change', (e)=>{
-  const v = e.target.value;
-  if(v==='assessment') $('#session-editor').classList.remove('hidden');
-  else $('#session-editor').classList.add('hidden');
-});
-
-// 파일 미리보기
-$('#f-file').addEventListener('change', (e)=>{
-  const file = e.target.files[0];
-  if(!file) { $('#file-preview').innerHTML=''; return; }
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const dataUrl = ev.target.result;
-    if(file.type.startsWith('image/')){
-      $('#file-preview').innerHTML = `<div class="file-preview"><img data-preview="1" src="${dataUrl}" alt="미리보기"></div>`;
-      $('#file-preview img').addEventListener('click',()=>openLightbox(dataUrl));
-    } else {
-      $('#file-preview').innerHTML = `<a class="file-link" href="${dataUrl}" download="${file.name}">📎 ${file.name}</a>`;
+  // Build chart data for the selected range (inclusive)
+  const chartData = useMemo(() => {
+    if (!rangeStart || !rangeEnd) return [];
+    const start = parseISO(rangeStart);
+    const end = parseISO(rangeEnd);
+    const days = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const iso = formatDateISO(d);
+      days.push({ date: iso, liters: entriesByDate.get(iso) ?? 0 });
     }
-  };
-  reader.readAsDataURL(file);
-});
+    return days;
+  }, [rangeStart, rangeEnd, entriesByDate]);
 
-// 저장 로직
-async function saveEditor(){
-  const cat = $('#f-category').value; // event | assessment | class
-  const date = $('#f-date').value?.trim();
-  const title = $('#f-title').value?.trim();
-  const description = $('#f-desc').value?.trim();
-  const file = $('#f-file').files[0];
-  if(!cat || !date || !title || !description) return alert('모든 항목을 입력하세요.');
-
-  // 권한 체크
-  if(cat==='event'){
-    // 행사: 마스터 비번 필요
-    if(!await requireMaster()) return;
-  } else if(cat==='assessment'){
-    // 수행평가 본문: 마스터 비번 필요 (세부 차시는 반별 편집 화면에서)
-    if(!await requireMaster()) return;
-  } else if(cat==='class'){
-    // 반별 공지: 현재 반 + 해당 반 비번 또는 마스터
-    if(!currentClass) return alert('먼저 반을 선택하세요.');
-    const ok = await requireClassOrMaster(currentClass);
-    if(!ok) return;
+  function fillInputsFromDate(date) {
+    setDateInput(date);
+    setLitersInput(entriesByDate.get(date) ?? 0);
   }
 
-  const base = { date, title, description, updatedAt: serverTimestamp() };
-  if(file){
-    base.fileName = file.name; base.fileType = file.type;
-    base.fileData = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(file); });
+  function exportCSV() {
+    const header = ["date", "liters"];
+    const rows = entries.map((e) => [e.date, e.liters]);
+    const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `waterboom_entries_${formatDateISO(new Date())}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
-  if(editContext?.mode==='edit'){
-    // update existing
-    if(cat==='event') await updateDoc(doc(db,'events', editContext.id), base);
-    if(cat==='assessment'){
-      // include defaultSessions from editor
-      const sessions = collectSessionEditor();
-      await updateDoc(doc(db,'assessments', editContext.id), {...base, defaultSessions: sessions});
-    }
-    if(cat==='class') await updateDoc(doc(db,'classNotices', editContext.id), {...base, className: currentClass});
-  } else {
-    // create new
-    if(cat==='event') await addDoc(collection(db,'events'), {...base, createdAt: serverTimestamp()});
-    if(cat==='assessment'){
-      const sessions = collectSessionEditor();
-      await addDoc(collection(db,'assessments'), {...base, createdAt: serverTimestamp(), defaultSessions: sessions});
-    }
-    if(cat==='class') await addDoc(collection(db,'classNotices'), {...base, className: currentClass, createdAt: serverTimestamp()});
+  function importCSV(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = reader.result;
+        const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        const parsed = lines.slice(1).map((ln) => {
+          const [date, liters] = ln.split(",").map((s) => s.trim());
+          return { date, liters: Number(liters) };
+        });
+        // merge (overwrite same-date)
+        const merged = [...entries.filter((e) => !parsed.some((p) => p.date === e.date)), ...parsed]
+          .sort((a, b) => (a.date < b.date ? -1 : 1));
+        setEntries(merged);
+        alert("CSV 가져오기 완료");
+      } catch (err) {
+        alert("CSV 읽기 실패: " + err.message);
+      }
+    };
+    reader.readAsText(file);
   }
 
-  await reloadAndReturn();
-}
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white p-6">
+      <div className="max-w-4xl mx-auto">
+        <header className="mb-6">
+          <h1 className="text-3xl font-bold">Waterboom — 하루 물 사용량 기록</h1>
+          <p className="text-gray-600 mt-1">하루 물 사용량을 기록하고, 옛날 기록도 확인하세요.</p>
+        </header>
 
-function collectSessionEditor(){
-  const rows = [...$$('#session-list .session-item')];
-  const items = rows.map(r=>({ order: Number(r.querySelector('.s-order').value||0), text: r.querySelector('.s-text').value.trim() }))
-                    .filter(x=>x.text);
-  // unique & sort
-  const seen = new Set();
-  const dedup = items.filter(x=>{ const k = x.order+':'+x.text; if(seen.has(k)) return false; seen.add(k); return true; })
-                     .sort((a,b)=>(a.order||0)-(b.order||0));
-  return dedup;
-}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <form onSubmit={handleAddOrUpdate} className="p-4 bg-white rounded-2xl shadow-sm">
+            <h2 className="font-semibold mb-3">오늘/선택한 날짜 기록</h2>
+            <label className="block text-sm text-gray-700">날짜</label>
+            <input
+              type="date"
+              className="mt-1 mb-3 w-full p-2 border rounded"
+              value={dateInput}
+              onChange={(e) => {
+                setDateInput(e.target.value);
+                const existing = entriesByDate.get(e.target.value);
+                if (existing !== undefined) setLitersInput(existing);
+              }}
+            />
 
-async function reloadAndReturn(){
-  await Promise.all([loadEvents(), loadAssessments(), loadClassNotices()]);
-  renderAll();
-  $('#editor').classList.add('hidden');
-  $('#main').classList.remove('hidden');
-}
+            <label className="block text-sm text-gray-700">사용한 물 (리터)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              className="mt-1 mb-3 w-full p-2 border rounded"
+              value={litersInput}
+              onChange={(e) => setLitersInput(e.target.value)}
+            />
 
-// 삭제
-async function handleDelete(category, n){
-  if(category==='event' || category==='assessment'){
-    if(!await requireMaster()) return; // 마스터만 삭제
-  } else if(category==='class'){
-    const ok = await requireClassOrMaster(n.className);
-    if(!ok) return;
-  }
-  if(!confirm('정말 삭제하시겠습니까?')) return;
-  if(category==='event') await deleteDoc(doc(db,'events', n.id));
-  if(category==='assessment') await deleteDoc(doc(db,'assessments', n.id));
-  if(category==='class') await deleteDoc(doc(db,'classNotices', n.id));
-  await loadAll();
-}
+            <div className="flex gap-2">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-xl">저장</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDateInput(formatDateISO(new Date()));
+                  setLitersInput(0);
+                }}
+                className="px-4 py-2 bg-gray-100 rounded-xl"
+              >
+                초기화
+              </button>
+            </div>
 
-// ====== 수행평가 차시 (반별 편집) ======
-function openSessionPanel(assessment){
-  if(!currentClass) return alert('먼저 반을 선택하세요.');
-  $('#sp-assessment-title').textContent = assessment.title;
-  $('#session-panel').dataset.assessmentId = assessment.id;
-  $('#session-panel').classList.remove('hidden');
-  $('#main').classList.add('hidden');
-  loadClassSessionsIntoPanel(assessment);
-}
+            <div className="mt-4 text-sm text-gray-600">메모: 같은 날짜에 저장하면 기록이 덮어써집니다.</div>
+          </form>
 
-// ✅ 수정됨: 반별 차시 불러오기
-async function loadClassSessionsIntoPanel(assessment){
-  const ref = doc(db,'assessments', assessment.id, 'sessions', currentClass);
-  const sdoc = await getDoc(ref);
-  const existing = sdoc.exists() ? (sdoc.data().items||[]) : [];
-  const existingMap = {};
-  existing.forEach(x => existingMap[x.order] = x.date || "");
+          <div className="p-4 bg-white rounded-2xl shadow-sm">
+            <h2 className="font-semibold mb-3">차트: 선택한 기간의 물 사용량</h2>
 
-  // 공통 차시 목록
-  const defaults = (assessment.defaultSessions || []).slice().sort((a,b)=>(a.order||0)-(b.order||0));
-  const box = $('#class-session-list');
-  box.innerHTML = '';
+            <div className="flex gap-2 items-center mb-3">
+              <div>
+                <label className="text-sm text-gray-700 block">시작</label>
+                <input
+                  type="date"
+                  value={rangeStart}
+                  onChange={(e) => setRangeStart(e.target.value)}
+                  className="mt-1 p-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-700 block">끝</label>
+                <input
+                  type="date"
+                  value={rangeEnd}
+                  onChange={(e) => setRangeEnd(e.target.value)}
+                  className="mt-1 p-2 border rounded"
+                />
+              </div>
+              <div className="ml-auto text-sm text-gray-600">총일수: {chartData.length}</div>
+            </div>
 
-  if (defaults.length === 0) {
-    box.innerHTML = '<div class="help">공통 차시 정보가 없습니다.</div>';
-    return;
-  }
+            <div style={{ height: 240 }} className="bg-sky-50 p-3 rounded">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} />
+                  <YAxis />
+                  <Tooltip formatter={(val) => `${val} L`} />
+                  <Line type="monotone" dataKey="liters" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
 
-  defaults.forEach(x => {
-    const row = document.createElement('div');
-    row.className = 'session-item';
-    row.innerHTML = `
-      <div style="flex:1;">
-        <b>${x.order}차시</b> : ${x.text}
+            <div className="mt-3 flex gap-2">
+              <button
+                className="px-3 py-2 bg-green-600 text-white rounded-xl"
+                onClick={() => {
+                  // quick range: last 7 days
+                  const end = new Date();
+                  const start = new Date();
+                  start.setDate(end.getDate() - 6);
+                  setRangeStart(formatDateISO(start));
+                  setRangeEnd(formatDateISO(end));
+                }}
+              >
+                최근 7일
+              </button>
+              <button
+                className="px-3 py-2 bg-indigo-600 text-white rounded-xl"
+                onClick={() => {
+                  const end = new Date();
+                  const start = new Date();
+                  start.setDate(end.getDate() - 29);
+                  setRangeStart(formatDateISO(start));
+                  setRangeEnd(formatDateISO(end));
+                }}
+              >
+                최근 30일
+              </button>
+              <button
+                className="px-3 py-2 bg-gray-100 rounded-xl"
+                onClick={() => {
+                  setRangeStart(entries.length ? entries[0].date : rangeStart);
+                  setRangeEnd(entries.length ? entries[entries.length - 1].date : rangeEnd);
+                }}
+              >
+                전체 기간
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="p-4 bg-white rounded-2xl shadow-sm">
+            <h2 className="font-semibold mb-3">기록 목록</h2>
+            <div className="overflow-auto max-h-64">
+              {entries.length === 0 ? (
+                <div className="text-sm text-gray-500">아직 기록이 없습니다.</div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-600">
+                      <th className="p-2">날짜</th>
+                      <th className="p-2">사용량 (L)</th>
+                      <th className="p-2">동작</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entries
+                      .slice()
+                      .reverse()
+                      .map((e) => (
+                        <tr key={e.date} className="border-t">
+                          <td className="p-2">{e.date}</td>
+                          <td className="p-2">{e.liters}</td>
+                          <td className="p-2">
+                            <button
+                              className="mr-2 px-2 py-1 bg-sky-100 rounded"
+                              onClick={() => fillInputsFromDate(e.date)}
+                            >
+                              불러오기
+                            </button>
+                            <button
+                              className="px-2 py-1 bg-red-100 rounded"
+                              onClick={() => handleDelete(e.date)}
+                            >
+                              삭제
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+
+          <div className="p-4 bg-white rounded-2xl shadow-sm">
+            <h2 className="font-semibold mb-3">데이터 관리</h2>
+            <div className="flex gap-2">
+              <button className="px-4 py-2 bg-yellow-500 text-white rounded-xl" onClick={exportCSV}>
+                CSV 내보내기
+              </button>
+              <label className="px-4 py-2 bg-gray-100 rounded-xl cursor-pointer">
+                CSV 가져오기
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) importCSV(f);
+                  }}
+                />
+              </label>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded-xl ml-auto"
+                onClick={() => {
+                  if (!confirm("모든 기록을 완전히 삭제하시겠어요?")) return;
+                  setEntries([]);
+                }}
+              >
+                전체 삭제
+              </button>
+            </div>
+
+            <div className="mt-4 text-sm text-gray-600">
+              이 앱은 브라우저 로컬스토리지를 사용합니다. 다른 기기에서 동기화하려면 CSV로 내보내기/가져오기를 사용하세요.
+            </div>
+          </div>
+        </section>
+
+        <footer className="mt-6 text-center text-gray-500 text-sm">
+          © Waterboom — 물의 중요성을 기억하세요.
+        </footer>
       </div>
-      <input type="date" class="s-date" value="${existingMap[x.order] || ''}">
-    `;
-    box.appendChild(row);
-  });
+    </div>
+  );
 }
-
-// ✅ 수정됨: 저장 시 반별 날짜 저장
-$('#sp-save').addEventListener('click', async ()=>{
-  if(!currentClass) return alert('반 선택 필요');
-  const ok = await requireClassPasswordOnly(currentClass);
-  if(!ok) return;
-
-  const aid = $('#session-panel').dataset.assessmentId;
-  const aDoc = assessments.find(a => a.id === aid);
-  if(!aDoc) return alert('수행평가 정보를 불러오지 못했습니다.');
-
-  const defaults = (aDoc.defaultSessions || []).slice().sort((a,b)=>(a.order||0)-(b.order||0));
-  const rows = [...$$('#class-session-list .session-item .s-date')];
-
-  const items = defaults.map((x, i) => ({
-    order: x.order,
-    text: x.text,
-    date: rows[i]?.value?.trim() || ""
-  })).filter(x => x.date);
-
-  await setDoc(doc(db,'assessments', aid, 'sessions', currentClass), {
-    items,
-    updatedAt: serverTimestamp()
-  });
-
-  alert('저장되었습니다.');
-  $('#session-panel').classList.add('hidden');
-  $('#main').classList.remove('hidden');
-});
-
-$('#sp-cancel').addEventListener('click', ()=>{
-  $('#session-panel').classList.add('hidden');
-  $('#main').classList.remove('hidden');
-});
-
-// =============== 권한 체크 ===============
-async function requireMaster(){
-  if(!masterHash){ alert('마스터 비밀번호가 설정되지 않았습니다.'); return false; }
-  const p = prompt('마스터 비밀번호를 입력하세요');
-  if(p===null) return false;
-  const ok = await verifyPassword(p, masterHash);
-  if(!ok) alert('비밀번호가 틀렸습니다.');
-  return ok;
-}
-async function requireClassPasswordOnly(className){
-  const c = classes[className];
-  if(!c || !c.passwordHash){ alert('해당 반의 비밀번호가 설정되지 않았습니다.'); return false; }
-  const p = prompt(`${className} 비밀번호를 입력하세요`);
-  if(p===null) return false;
-  const ok = await verifyPassword(p, c.passwordHash);
-  if(!ok) alert('비밀번호가 틀렸습니다.');
-  return ok;
-}
-async function requireClassOrMaster(className){
-  const p = prompt(`${className} 비밀번호 또는 마스터 비밀번호를 입력하세요`);
-  if(p===null) return false;
-  const h = await sha256Hex(p);
-  const ok = (classes[className]?.passwordHash && h===classes[className].passwordHash) || (masterHash && h===masterHash);
-  if(!ok) alert('비밀번호가 틀렸습니다.');
-  return ok;
-}
-
-// =============== 반 선택 ===============
-function selectClass(){
-  const v = $('#class-select-input').value;
-  if(!/^1학년[1-9]반$/.test(v)) return alert('반을 선택하세요');
-  currentClass = v;
-  $('#class-select').classList.add('hidden');
-  $('#main').classList.remove('hidden');
-  renderAll();
-}
-function backToClass(){
-  currentClass = null;
-  $('#main').classList.add('hidden');
-  $('#class-select').classList.remove('hidden');
-}
-
-// =============== 이벤트 바인딩 ===============
-$('#class-confirm-btn').addEventListener('click', selectClass);
-$('#nav-back').addEventListener('click', backToClass);
-$('#btn-add').addEventListener('click', openEditorForCreate);
-$('#btn-cancel').addEventListener('click', ()=>{ $('#editor').classList.add('hidden'); $('#main').classList.remove('hidden'); });
-$('#btn-save').addEventListener('click', saveEditor);
-
-// 최초 로드
-await loadAll();
-</script>
-</body>
-</html>
