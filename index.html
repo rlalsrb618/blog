@@ -1,4 +1,29 @@
+from flask import Flask, render_template_string, request, jsonify
+import sqlite3, os
+from datetime import date
 
+app = Flask(__name__)
+DB_FILE = "water_usage.db"
+
+# DB 초기화
+def init_db():
+    if not os.path.exists(DB_FILE):
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS usage (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                day TEXT UNIQUE,
+                amount REAL
+            )
+        """)
+        conn.commit()
+        conn.close()
+
+init_db()
+
+# HTML 템플릿
+HTML = """
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -7,30 +32,90 @@
 <style>
 body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
 h1 { color: #0077cc; }
-form, table { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+form { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
 input[type=date], input[type=number] { padding: 5px; margin: 5px; }
 button { background: #0077cc; color: white; border: none; padding: 7px 12px; border-radius: 5px; cursor: pointer; }
 button:hover { background: #005fa3; }
-table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: center; }
+p { margin-top: 15px; font-size: 1.1em; }
 </style>
 </head>
 <body>
 <h1>1일 물 사용량 기록</h1>
 
-<form method="POST">
+<form id="waterForm" method="POST">
   <label>날짜:</label>
-  <input type="date" name="day" value="{{today}}" required>
+  <input type="date" id="day" name="day" value="{{today}}" required>
   <label>사용량(리터):</label>
-  <input type="number" name="amount" step="0.1" min="0" required>
+  <input type="number" id="amount" name="amount" step="0.1" min="0" required>
   <button type="submit">저장</button>
 </form>
 
-  <h2>기록 목록</h2>
-  <table>
-    <tr><th>날짜</th><th>사용량 (L)</th></tr>
-    <tr><td>{{ d }}</td><td>{{ a }}</td></tr>
-  </table>
+<p id="message"></p>
 
+<script>
+const dayInput = document.getElementById('day');
+const amountInput = document.getElementById('amount');
+const message = document.getElementById('message');
+const form = document.getElementById('waterForm');
+
+// 날짜 변경 시 자동으로 해당 날짜 데이터 불러오기
+dayInput.addEventListener('change', async () => {
+  const day = dayInput.value;
+  if (!day) return;
+  const res = await fetch('/get_amount?day=' + day);
+  const data = await res.json();
+  if (data.amount !== null) {
+    amountInput.value = data.amount;
+    message.textContent = `이날 기록된 사용량은 ${data.amount}리터입니다.`;
+  } else {
+    amountInput.value = '';
+    message.textContent = '이 날짜의 기록이 없습니다.';
+  }
+});
+
+// 폼 전송 시 저장
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(form);
+  const res = await fetch('/', {
+    method: 'POST',
+    body: formData
+  });
+  const data = await res.json();
+  message.textContent = data.msg;
+});
+</script>
 </body>
 </html>
+"""
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        day = request.form["day"]
+        amount = request.form["amount"]
+
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        # 이미 존재하면 업데이트
+        c.execute("INSERT OR REPLACE INTO usage (day, amount) VALUES (?, ?)", (day, amount))
+        conn.commit()
+        conn.close()
+
+        return jsonify({"msg": f"{day} 사용량 {amount}L 저장 완료!"})
+
+    return render_template_string(HTML, today=date.today().isoformat())
+
+@app.route("/get_amount")
+def get_amount():
+    day = request.args.get("day")
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT amount FROM usage WHERE day = ?", (day,))
+    row = c.fetchone()
+    conn.close()
+    amount = row[0] if row else None
+    return jsonify({"amount": amount})
+
+if __name__ == "__main__":
+    app.run(debug=True)
